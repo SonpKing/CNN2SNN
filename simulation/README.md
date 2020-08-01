@@ -1,7 +1,7 @@
-### This tutorial will help to compile your neuron model in nest.
+### This tutorial will help to compile your neuron model in NEST.
 Two of the famous neuron simulators is NEST and BRAIN. BRAIN is user friendly, howerver it cannot suppport large-scale network. In other words, BRAIN is TOO MORE SLOWER than NEST. We choose NEST as our default simulator. 
 
-Even using NEST, you still need to be careful with the scale of your network. One thread in NEST only support limit neurons, so you'd better set "local_num_threads" with the statement like ``` nest.SetKernelStatus({"local_num_threads": threads}) ```. 
+Even using NEST, you still need to be careful with the scale of your network. One thread in NEST only support limit neurons, so you'd better set "local_num_threads" with the statement like ``` nest.SetKernelStatus({"local_num_threads": threads}) ```. Additionally, the order of connections returned by ```nest.GetConnections()``` cann't be promised when the number of threads more than one.
 
 Unfortunately, the models in NEST cannot satisfy our simulation. So, we need compile the source code of NEST by adding our model. This means you need to check your model too. Fllowing is the progress of the compilation. Good Luck!
 
@@ -24,4 +24,4 @@ info: install_path is a new diretions you used to build nest, and src_path is th
 
 If you still confuse about the progess, please review the files in "example\" for more help. The example neuron model is defined in "example\iaf_delta_noleak.h" and "example\iaf_delta_noleak.cpp".
 
-If you don't want to compile the NEST, you can also using my compileed fils which can be download from [google drive](https://drive.google.com/file/d/1HUlGNSmagTSvkIlJ-4IMdUM2C5cdshlD/view?usp=sharing) or [baidudisk with code "2snn"](https://pan.baidu.com/s/1AN-FSSYyWcesoOqYQ3VLFA ). Howerer, I cannot promise it would work for you due the diffrence of our systems and other environments.
+If you don't want to compile the NEST, you can also using my compiled files which can be download from [google drive](https://drive.google.com/file/d/1HUlGNSmagTSvkIlJ-4IMdUM2C5cdshlD/view?usp=sharing) or [baidudisk with code "2snn"](https://pan.baidu.com/s/1AN-FSSYyWcesoOqYQ3VLFA ). Howerer, I cannot promise it would work for you due to the diffrence between our systems or other factors.
