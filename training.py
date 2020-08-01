@@ -1,10 +1,10 @@
 import argparse
 import os
-from models import *
+from models.AppleNet import *
 from util import load_single_to_multi, read_labels, writeToTxt, data_loader
-from gpu_loader import gpu_data_loader
+from util.gpu_loader import gpu_data_loader
+from util.training_adv import fit
 import torch.nn.utils.prune as prune
-from training_adv import fit
 import torch
 import torch.nn as nn
 from convert import mix_bn_to_conv
@@ -180,8 +180,8 @@ os.environ["CUDA_VISIBLE_DEVICES"]="0, 1, 2"
 
 # validate
 from util import load_pretrained
-from convert import normalise_module, convert_module
-from validate import validate
+from convert.convert_applenet import normalise_module, convert_module
+from util.validate import validate
 model = applenetv2_spike(8, vth=100.0)
 model = model.cuda()
 train_loader, val_loader = data_loader("/home/jinxb/Project/data/Darwin_data2", batch_size=1, img_size=32, workers=args.workers, dataset="imagenet") 

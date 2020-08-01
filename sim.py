@@ -1,4 +1,4 @@
-from util.training_util import data_loader
+from util import data_loader
 from simulation.nest_sim import Simulator
 import numpy as np
 def main():

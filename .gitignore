@@ -1,6 +1,9 @@
 config/*
-connections/*
+connections*/*
 data/*
+checkpoint*/*
+run*/*
+max_activations*/*
 .*
 __*
 !__init__.py

@@ -1,1 +1,1 @@
-from .AppleNet.AppleNet import *
+from .SpikeNet import *

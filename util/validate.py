@@ -3,7 +3,7 @@ import os, time
 import torch
 import torchvision.transforms as transforms
 from util import AverageMeter, accuracy
-from applenet import reset_spikenet
+from models import reset_spikenet
 from torch.autograd import Variable
 import pickle
 
