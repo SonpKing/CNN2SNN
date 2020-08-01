@@ -8,8 +8,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from applenet import Scale, Blocks2, Pool_Scale
-from util import get_state, load_pruned
+from models.AppleNet.AppleNet import Scale, Blocks2, Pool_Scale
+from util.training_util import get_state, load_pruned
 
 import math
 import pickle

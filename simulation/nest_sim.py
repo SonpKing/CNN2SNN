@@ -1,7 +1,7 @@
 import nest
 import numpy as np
 import os, pickle
-from convert import parse_name
+from convert.convert import parse_name
 from PIL import Image
 
 

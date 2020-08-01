@@ -6,6 +6,11 @@ We use pytorch as CNN training framework.
 Luckily, in favor of the package "torch.nn.utils.prune" in pytorch(>=1.4) we can prune the network freely.
 ## Convertion
 There were some study about how to convert CNN to SNN with slight loss.
+- The "connections/" directory is to store the fine converted connections.
+```
+1. Your conenctions file shall be named like "A_to_B".
+2. We suggest that your file be generated in the format of byte. The package "pickle" will be useful to you.
+```
 ## Simulation
 We use NEST as our simulator.
 ## Validation
