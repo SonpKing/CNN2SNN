@@ -5,3 +5,4 @@ data/*
 __*
 !__init__.py
 !.gitignore
+!README.md
