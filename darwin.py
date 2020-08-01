@@ -1,8 +1,7 @@
-from hardware.darwain_hardware import DarwinDev
-from hardware.create_conf import create_config
+from hardware import DarwinDev, create_config
 import numpy as np 
 from time import sleep
-from util.training_util import data_loader
+from util import data_loader
 
 def sim():
     _, val_loader = data_loader("C:/Users/dell/Desktop/Darwin_data2", batch_size=1, img_size=32, workers=1, dataset="imagenet") 
