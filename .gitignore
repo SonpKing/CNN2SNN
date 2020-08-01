@@ -1,0 +1,7 @@
+config/*
+connections/*
+data/*
+.*
+__*
+!__init__.py
+!.gitignore
