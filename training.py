@@ -1,6 +1,6 @@
 import argparse
 import os
-from applenet import *
+from models import *
 from util import load_single_to_multi, read_labels, writeToTxt, data_loader
 from gpu_loader import gpu_data_loader
 import torch.nn.utils.prune as prune
@@ -178,27 +178,27 @@ os.environ["CUDA_VISIBLE_DEVICES"]="0, 1, 2"
 # torch.save({"state_dict": state}, "checkpoint/0/applenet_normalise_scale.pth.tar")
 
 
-# # validate
-# from util import load_pretrained
-# from convert import normalise_module, convert_module
-# from validate import validate
-# model = applenetv2_spike(8, vth=100.0)
-# model = model.cuda()
-# train_loader, val_loader = data_loader("/home/jinxb/Project/data/Darwin_data2", batch_size=1, img_size=32, workers=args.workers, dataset="imagenet") 
-# args.pretrain = "checkpoint/0/applenet_normalise_scale.pth.tar"
-# load_pretrained(model, args.pretrain, [])
-# validate(val_loader, model, 300)
-
-
-# generate connections
+# validate
 from util import load_pretrained
-from convert import normalise_module, convert_module, mute_prune_connections
+from convert import normalise_module, convert_module
+from validate import validate
 model = applenetv2_spike(8, vth=100.0)
+model = model.cuda()
 train_loader, val_loader = data_loader("/home/jinxb/Project/data/Darwin_data2", batch_size=1, img_size=32, workers=args.workers, dataset="imagenet") 
 args.pretrain = "checkpoint/0/applenet_normalise_scale.pth.tar"
 load_pretrained(model, args.pretrain, [])
-convert_module(model, "net", 1, "input", (3, 32, 32), prune=False)
-mute_prune_connections("connections", "connections_new")
+validate(val_loader, model, 300)
+
+
+# # generate connections
+# from util import load_pretrained
+# from convert import normalise_module, convert_module, mute_prune_connections
+# model = applenetv2_spike(8, vth=100.0)
+# train_loader, val_loader = data_loader("/home/jinxb/Project/data/Darwin_data2", batch_size=1, img_size=32, workers=args.workers, dataset="imagenet") 
+# args.pretrain = "checkpoint/0/applenet_normalise_scale.pth.tar"
+# load_pretrained(model, args.pretrain, [])
+# convert_module(model, "net", 1, "input", (3, 32, 32), prune=False)
+# mute_prune_connections("connections", "connections_new")
 
 
 # %%
