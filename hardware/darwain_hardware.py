@@ -4,7 +4,7 @@ import time
 # import node_alloc as alloc
 from mapping import gen_input as gen_in
 import os
-import transmitter2 as ts
+from . import transmitter2 as ts
 import numpy as np
 from PIL import Image
 from time import sleep

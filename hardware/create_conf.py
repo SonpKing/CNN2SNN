@@ -8,7 +8,7 @@ from mapping import map2
 import os
 
 
-def get_headpack():
+def get_headpack(x, y):
     x1 = x % 24
     y1 = y % 24
     tmp = (x << 18) | (y << 12) | (24 << 6) | (23) ###(24,23)input
@@ -18,16 +18,16 @@ def get_headpack():
         return (y1 << 38) | (0b10 << 36) | (0b1 << 32) | (0b1 << 29) | (0x4 << 24) | tmp
 
 
-def get_bodypackhead():
+def get_bodypackhead(y):
     y1 = y % 24
     return (y1 << 38) | (0b1 << 32)
 
 
-def get_tailpackhead():
+def get_tailpackhead(y):
     y1 = y % 24
     return (y1 << 38) | (0b01 << 36) | (0b1 << 32)
 
-if __name__ == "__main__":
+def create_config():
     neurontype = 1
     grid_size = 24
     leak = 0
@@ -153,9 +153,9 @@ if __name__ == "__main__":
             f = open(str4, "w")
             for i in range(id2 - id1):
                 for x, y in nodelist[i]:
-                    tmp = get_headpack()
-                    body_pack_head = get_bodypackhead()
-                    tail_pack_head = get_tailpackhead()
+                    tmp = get_headpack(x, y)
+                    body_pack_head = get_bodypackhead(y)
+                    tail_pack_head = get_tailpackhead(y)
                     ss = "%011x" % tmp  # head
                     f.write(ss + '\n')
                     tmp = (0b1 << 31) | 0x0
@@ -171,9 +171,9 @@ if __name__ == "__main__":
             for i in range(id2 - id1):
                 # print("i:", i)
                 for x, y in nodelist[i]:
-                    tmp = get_headpack()
-                    body_pack_head = get_bodypackhead()
-                    tail_pack_head = get_tailpackhead()
+                    tmp = get_headpack(x, y)
+                    body_pack_head = get_bodypackhead(y)
+                    tail_pack_head = get_tailpackhead(y)
                     ss = "%011x" % tmp  # head
                     f.write(ss + '\n')
                     tmp = (0b1 << 31) | 0x0
@@ -242,3 +242,6 @@ if __name__ == "__main__":
 
     time2 = time.time()
     print(time2 - time1)
+
+if __name__ == "__main__":
+    create_config()

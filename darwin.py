@@ -1,8 +1,10 @@
-from darwain_hardware import DarwinDev
+from hardware.darwain_hardware import DarwinDev
+from hardware.create_conf import create_config
 import numpy as np 
 from time import sleep
-if __name__ == "__main__":
-    from util import data_loader
+from util.training_util import data_loader
+
+def sim():
     _, val_loader = data_loader("C:/Users/dell/Desktop/Darwin_data2", batch_size=1, img_size=32, workers=1, dataset="imagenet") 
     ticks = 100
     total_acc  = 0
@@ -20,3 +22,7 @@ if __name__ == "__main__":
             total_acc += 1
         print(it,sim_res, targets[0], total_acc/(it+1)*100)
         # sleep(1.0)
+
+if __name__ == "__main__":
+    create_config()
+    sim()
