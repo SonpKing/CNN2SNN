@@ -148,13 +148,20 @@ class Simulator:
             self.conn.append(sorted(conn, key = lambda k: k[1]))# local_num_threads is not 1, the order of conn cann't be promised. sort by target_id
 
     def fit_input(self, inputs):
+        assert np.max(inputs) <= 1.0 and np.min(inputs) >= 0.0
         _, height, width = inputs.shape
         slice = int(np.sqrt(self.chips))
         _height, _width = height // slice, width // slice
         inputs = np.round(inputs * self.input_vth)
+        if inputs.shape[-1] == 3:
+            pass
+        elif inputs.shape[0] == 3:
+            img = inputs.transpose((1, 2, 0))
+        else:
+            print("input shape error", inputs.shape)
         for i in range(slice):
             for j in range(slice):
-                img = list(inputs[:, i*_height: (i+1)*_height, j*_width: (j+1)*_width].transpose((1, 2, 0)).ravel())
+                img = list(inputs[i*_height: (i+1)*_height, j*_width: (j+1)*_width, :].ravel())
                 nest.SetStatus(self.conn[i*slice+j], [{"weight":I_e} for I_e in img])
  
 
