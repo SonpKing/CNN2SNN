@@ -156,7 +156,7 @@ class Simulator:
         if inputs.shape[-1] == 3:
             pass
         elif inputs.shape[0] == 3:
-            img = inputs.transpose((1, 2, 0))
+            inputs = inputs.transpose((1, 2, 0))
         else:
             print("input shape error", inputs.shape)
         for i in range(slice):

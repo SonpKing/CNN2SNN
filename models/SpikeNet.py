@@ -2,18 +2,18 @@ import torch
 import torch.nn as nn
 import pickle
 import os
+import numpy as np
 
 class If(nn.Module):
     cnt = 0
     def __init__(self, V_th=1, V_reset=0):
         super().__init__()
         self.V_th = torch.tensor(V_th)
-        self.V_reset = V_reset
         self.membrane = None
         self.init = True
         self.total_num = None
-        self.idx = -1
-        self.bias = None
+        # self.idx = -1
+        # self.bias = None
 
     def create_neurons(self, x):
         self.membrane = torch.zeros(x.shape, device = x.device) #！！！maybe increase gpu memory
@@ -63,7 +63,7 @@ class If3(If):
 def reset_spikenet(net):
     print("reset spikenet")
     for _, m in net.named_modules():
-        if isinstance(m, If) or isinstance(m, If2):
+        if isinstance(m, If):
             m.reset()
 
 class MyRelu2(nn.Module):
@@ -114,3 +114,22 @@ class Pool_Scale(nn.Module):
         x = self.pool(x)
         x = self.scale(x)
         return x
+
+
+class SpikeNet(nn.Module):
+    def __init__(self, net, vth, scale=100):
+        super().__init__()
+        self.input = If2(scale)
+        self.net = net
+        self.output = If3(vth)
+        self.scale = scale
+
+    def forward(self, x):
+        x = torch.round(x * self.scale)
+        x = self.input(x)
+        x = self.net(x)
+        x = self.output(x)
+
+        return x
+
+    

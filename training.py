@@ -182,12 +182,14 @@ os.environ["CUDA_VISIBLE_DEVICES"]="0, 1, 2"
 from util import load_pretrained
 from convert.convert_applenet import normalise_module, convert_module
 from util.validate import validate
-model = applenetv2_spike(8, vth=100.0)
+from models import SpikeNet
+model = applenetv2_spike(8, vth=90.0)
 model = model.cuda()
 train_loader, val_loader = data_loader("/home/jinxb/Project/data/Darwin_data2", batch_size=1, img_size=32, workers=args.workers, dataset="imagenet") 
 args.pretrain = "checkpoint/0/applenet_normalise_scale.pth.tar"
 load_pretrained(model, args.pretrain, [])
-validate(val_loader, model, 300)
+model = SpikeNet(model, vth=90.0)
+validate(val_loader, model, 100)
 
 
 # # generate connections

@@ -19,7 +19,7 @@ IF = False
 SCALE = 1.0
 def act_layer():
     if IF:
-        return If2(SCALE)
+        return If3(SCALE)
     elif SAVE_ACT:
         return MyRelu2()
     else:
@@ -68,7 +68,7 @@ class AppleNet(nn.Module):
         self.act1 = act_layer()
 
         self.fc = nn.Linear(self.num_feature, num_class, bias=False)
-        self.act2 = act_layer()
+        # self.act2 = act_layer()
         
         self.weight_init()
 
@@ -81,7 +81,7 @@ class AppleNet(nn.Module):
         x = self.act1(x)
         x = x.view(x.shape[0], -1)
         x = self.fc(x)
-        x = self.act2(x)
+        # x = self.act2(x)
 
         return x
 
