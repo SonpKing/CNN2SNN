@@ -23,5 +23,5 @@ def sim():
         # sleep(1.0)
 
 if __name__ == "__main__":
-    create_config()
+    # create_config()
     sim()

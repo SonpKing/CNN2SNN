@@ -6,6 +6,7 @@ run*/*
 max_activations*/*
 .*
 __*
+*.tmp
 !__init__.py
 !.gitignore
 !README.md

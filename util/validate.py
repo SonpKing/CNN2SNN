@@ -70,5 +70,18 @@ def validate(val_loader, model, sim_iter=None, show=True):
     return top1.avg
 
 
+def eval_single(inputs, model, sim_iter=None):
+    with torch.no_grad():
+        reset_spikenet(model)
+        input_var = Variable(inputs)
+        output = None
+        for _ in range(sim_iter):
+            if isinstance(output, torch.Tensor):
+                output += model(input_var)
+            else:
+                output = model(input_var) 
+    return output
+
+
 if __name__ == "__main__":
     pass

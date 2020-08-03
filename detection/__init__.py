@@ -1,2 +1,2 @@
-from .selective_search import SelectiveSearch, Camera, generate_bb
+from .selective_search import *
 from .non_max_supression import generate_boxes

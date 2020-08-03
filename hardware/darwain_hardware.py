@@ -78,7 +78,13 @@ class DarwinDev:
         print("send enable done")
 
     def fit_input(self, inputs):
-        return inputs.transpose((1, 2, 0)).ravel()
+        if inputs.shape[-1] == 3:
+            pass
+        elif inputs.shape[0] == 3:
+            inputs = inputs.transpose((1, 2, 0))
+        else:
+            print("input shape error", inputs.shape)
+        return inputs.ravel()
 
     def mfc_to_com(self, image, vth=100):
         new_con = self.in_conv1

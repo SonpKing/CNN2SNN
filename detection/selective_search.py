@@ -83,7 +83,7 @@ class SelectiveSearch:
         ss = cv.ximgproc.segmentation.createSelectiveSearchSegmentation()
         # set input image on which we will run segmentation
         ss.setBaseImage(img)
-        cv.imshow( "Output", img )
+        # cv.imshow( "Output", img )
         if self.quality:
             ss.switchToSelectiveSearchQuality()
         else:
@@ -93,13 +93,53 @@ class SelectiveSearch:
         print( 'Total Number of Region Proposals: {}'.format( len( rects ) ) )
         return rects
 
-def generate_bb(img, rect, resize=32):
+def rect2box(rect):
     x, y, w, h = rect
-    img = img[x : x + w, y : y + h]
-    img = cv.resize(img, (resize, resize))
-    return np.array(img) / 255.0
+    return (x, y, x + w, y + h)
 
+def bb_isvalid(img, rect):
+    x, y, w, h = rect
+    img_bb = img[x : x + w, y : y + h]
+    return np.prod(img_bb.shape) != 0
+
+def generate_bb(img, box, resize=32):
+    x1, y1, x2, y2 = box
+    assert x1 < x2 and y1 < y2
+    img_bb = img[x1 : x2, y1 : y2]
+    img_bb = cv.resize(img_bb, (resize, resize))
+    return np.array(img_bb) / 255.0
+
+def show_bb(img, boxes, numShowRects=10000, show_time=5000):
+    imOut = img.copy()
+    for i, box in enumerate( boxes ):
+        # draw rectangle for region proposal till numShowRects
+        if i == 0:
+            x, y, x2, y2 = box
+            cv.rectangle( imOut, (x, y), (x2, y2), (255, 0, 0), 1, cv.LINE_AA )
+        elif (i < numShowRects):
+            x, y, x2, y2 = box
+            cv.rectangle( imOut, (x, y), (x2, y2), (0, 255, 0), 1, cv.LINE_AA )
+        else:    
+            break
+    cv.imshow( "Output", imOut )
+    cv.waitKey(show_time)
     
+
+def vis_bb(img, bbox_pred, scores, cls_inds, class_num, class_name, show_time=0):
+    img = img.copy()
+    class_color = [(np.random.randint(255),np.random.randint(255),np.random.randint(255)) for _ in range(class_num)]
+    for i, box in enumerate(bbox_pred):
+        cls_indx = cls_inds[i]
+        xmin, ymin, xmax, ymax = box
+        box_w = int(xmax - xmin)
+        # print(xmin, ymin, xmax, ymax)
+        cv.rectangle(img, (int(xmin), int(ymin)), (int(xmax), int(ymax)), class_color[int(cls_indx)], 1)
+        cv.rectangle(img, (int(xmin), int(abs(ymin)-15)), (int(xmin+box_w*0.55), int(ymin)), class_color[int(cls_indx)], -1)
+        mess = '%s: %.3f' % (class_name[int(cls_indx)], scores[i])
+        cv.putText(img, mess, (int(xmin), int(ymin)), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,0), 1)
+    cv.imshow( "Result", img)
+    cv.waitKey(show_time)
+
 
 if __name__ == '__main__':
     cam = Camera()

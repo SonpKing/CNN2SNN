@@ -132,4 +132,7 @@ class SpikeNet(nn.Module):
 
         return x
 
+    def get_result(self):
+        return self.output.total_num
+
     

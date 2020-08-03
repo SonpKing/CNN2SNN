@@ -1,5 +1,5 @@
 import numpy as np
-
+# from .selective_search import show_bb
 def softmax(X, axis=-1):
     dim_max = np.expand_dims(np.max(X, axis=axis), axis=axis)
     X -= dim_max
@@ -29,30 +29,33 @@ def nms(boxes, scores, nms_thresh=0.5):
     y2 = boxes[:, 3]
 
     areas = (x2 - x1) * (y2 - y1)
-    order = scores.argsort(descending=True)
+    order = (-scores).argsort() #descend
 
     keep = []
     while order.size > 0:
+        
         i = order[0]
-        keep.append(i)
         maxx1 = np.maximum(x1[i], x1[order[1:]])
         maxy1 = np.maximum(y1[i], y1[order[1:]])
-        minx2 = np.maximum(x2[i], x2[order[1:]])
-        miny2 = np.maximum(y2[i], y2[order[1:]])
+        minx2 = np.minimum(x2[i], x2[order[1:]])
+        miny2 = np.minimum(y2[i], y2[order[1:]])
 
         width = np.maximum(1e-28, minx2 - maxx1)
         height = np.maximum(1e-28, miny2 - maxy1)
         inter = width * height
 
-        iou = inter / (areas[i] + areas[order[1:]] - inter)
+        iou = inter / np.min(([areas[i]] * len(order[1:]), areas[order[1:]]), 0) #inter / (areas[i] + areas[order[1:]] - inter) #
+        keep.append(i)
         inds = np.where(iou <= nms_thresh)[0]
         order = order[inds + 1]
+        
 
     return keep
 
 
 def generate_boxes(rects, cls_pred, cls_thresh=0.5, nms_thresh=0.5):
     scores, cls_inds = cls_score(cls_pred)
+    print(scores)
     mask = np.where(scores >= cls_thresh)
     scores = scores[mask]
     cls_inds = cls_inds[mask]
@@ -60,13 +63,13 @@ def generate_boxes(rects, cls_pred, cls_thresh=0.5, nms_thresh=0.5):
     keep_inds = nms(boxes, scores, nms_thresh)
     return boxes[keep_inds], cls_inds[keep_inds], scores[keep_inds]
 
-
 if __name__ == "__main__":
     data =[
         [0, 3, 7, 18, 0],
         [3, 2, 9, 29, 1],
-        [2, 8, 10, 0, 3]]
-    data = np.array(data)[:, :3]
+        [2, 8, 10, 0, 3],
+        [0, 0, 0, 0, 0]]
+    data = np.array(data)[:, :5]
     # data = data /  np.expand_dims(np.max(data, -1), -1)
     # data = np.arange(24).reshape(2, 3, 4)
     # import torch
