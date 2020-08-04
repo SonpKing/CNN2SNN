@@ -1,11 +1,11 @@
 import math
 import pickle
 import os
-from models.AppleNet import Pool_Scale, Blocks2
+from models.MobileNet_Slim import Pool_Scale, DepthwiseConv, InvertedResidual
 from models import Scale
 from .convert import *
 
-def convert_module(module, pre_name, num_chips, last_layer, input_shape, prune):
+def convert_module(module, pre_name, num_chips, last_layer, input_shape, prune, need_group=""):
     '''
     return last_layer_name, last_output_shape, num_chips
     '''
@@ -14,7 +14,7 @@ def convert_module(module, pre_name, num_chips, last_layer, input_shape, prune):
     # print(input_shape)
     if isinstance(module, nn.Conv2d):
         output_shape = []
-        conns = conv2d_connections(input_shape, module, num_chips, output_shape, prune=prune)
+        conns = conv2d_connections(input_shape, module, num_chips, output_shape, prune=prune, need_group=need_group)
         with_bias = module.bias!=None
         i = 0
         while i < len(conns):
@@ -48,15 +48,23 @@ def convert_module(module, pre_name, num_chips, last_layer, input_shape, prune):
     #     input_shape = (input_shape[0]//4, input_shape[1]*2, input_shape[2]*2)
     #     num_chips = 1
 
-    elif isinstance(module, Blocks2):
+    elif isinstance(module, DepthwiseConv) or isinstance(module, InvertedResidual):
         old_last_layer = last_layer
+        last_need_group = False
         for child_name, child_mod in module.named_children():
             child_name = name + "." + child_name
-            last_layer, input_shape, num_chips = convert_module(child_mod, child_name, num_chips, last_layer, input_shape, prune=prune)
-        # if module.has_residual:
-        #     conns = shortcut_connections(input_shape, num_chips=num_chips)
-        #     for i in range(len(conns)):
-        #         save_connections(conns[i], old_last_layer+"_to_"+last_layer+"_chip"+str(i))  
+            if isinstance(child_mod, nn.Conv2d) and child_mod.groups > 1:
+                last_layer, input_shape, num_chips = convert_module(child_mod, child_name, num_chips, last_layer, input_shape, prune=prune, need_group="output")
+                last_need_group = True
+            elif isinstance(child_mod, nn.Conv2d) and last_need_group:
+                last_layer, input_shape, num_chips = convert_module(child_mod, child_name, num_chips, last_layer, input_shape, prune=prune, need_group="input")
+                last_need_group = False
+            else:
+                last_layer, input_shape, num_chips = convert_module(child_mod, child_name, num_chips, last_layer, input_shape, prune=prune)
+        if module.has_residual:
+            conns = shortcut_connections(input_shape, num_chips=num_chips)
+            for i in range(len(conns)):
+                save_connections(conns[i], old_last_layer+"_to_"+last_layer+"_chip"+str(i))  
 
     elif isinstance(module, nn.Sequential) or name=="net":
         for name, mod in module.named_children():
@@ -83,13 +91,17 @@ def normalise_module(module, pre_name, max_acts, last_act, compensation=1.0):
         last_act = max_acts[pre_name]
         
 
-    elif isinstance(module, Blocks2):#isinstance(module, DepthwiseConv) or isinstance(module, InvertedResidual):
+    elif isinstance(module, DepthwiseConv) or isinstance(module, InvertedResidual):
         old_last_act = last_act
         if pre_name:
             pre_name += '.'
         for child_name, child_mod in module.named_children():
             child_name = pre_name + child_name
             last_act = normalise_module(child_mod, child_name, max_acts, last_act, compensation)
+        if module.has_residual:
+            print("normalise", pre_name+"scale")
+            module.scale.set_scale(old_last_act/last_act*compensation)
+            print(old_last_act/last_act*compensation)
 
     elif isinstance(module, nn.Sequential) or not pre_name:
         if pre_name:

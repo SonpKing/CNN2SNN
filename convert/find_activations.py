@@ -56,15 +56,13 @@ def normalise_max(net, path):
     idx = 0
     res = dict()
     for layer, _ in name_param:
-        if "scale" in layer:
-            continue
         layer = ".".join(layer.split('.')[:-1])
         if layer not in res:
             file_path = os.path.join(path, str(idx)+"_max_act")
-            idx += 1
             with open(file_path, 'rb') as f:
                 act = pickle.load(f)
-                print(idx, act)
+                print(idx, layer, act)
+            idx += 1
             res[layer] = (act[0] + act[1]) / 2.0
     print("total max_act", idx)
     return res
@@ -100,7 +98,7 @@ def move_max_act(path, save_path_dir):
     # move_max_act(path, "max_activations_res/2020-07-20T16:02")
    
     
-def find_max_act(params, ratio=1):
+def find_max_act(params, ratio=1.0):
     path, save_path = params
     files = os.listdir(path)
     for i in range(len(files)):
@@ -109,17 +107,14 @@ def find_max_act(params, ratio=1):
     print("process", path, ", total", file_len, "files")
     maxv, total_num = find_range(files)
     minv = 0
-    tail = file_len*32
-    pivot_num = int(total_num - tail)
+    pivot_num = int(total_num * ratio)
     while maxv - minv > 1e-5 and pivot_num > 10:
         print("process", path, minv, maxv, pivot_num)
         minv, maxv, pivot_num = find_bins(files, minv, maxv, pivot_num)
-    print("process", path, minv, maxv, pivot_num)
+    print("end process", path, minv, maxv, pivot_num)
     save_data(save_path, [minv, maxv, pivot_num])
  
-
-
-if __name__ == "__main__":
+def find_activations():
     pool = Pool(processes=10)
     path = "max_activations"
     save_path = "max_activations_res"
@@ -135,6 +130,10 @@ if __name__ == "__main__":
     pool.close()
     pool.join()
 
+
+if __name__ == "__main__":
+
+    find_activations()
     # bug = []
     # for i in range(len(layers)):
     #     layers[i] = os.path.join(path, layers[i])

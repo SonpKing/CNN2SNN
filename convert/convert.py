@@ -8,7 +8,6 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from models import Scale, Pool_Scale
 from util import get_state, load_pruned
 
 import math
@@ -209,7 +208,7 @@ def mix_bn_to_conv(net, state_path, conv_names=["conv"], bn_names=["bn"], fc_nam
         # print(layer, layer_param.data.detach().cpu().numpy().ravel()[:5])
 
 class Spatial_Postion:
-    def __init__(self, input_shape, output_ch, kernel, padding, stride, group):
+    def __init__(self, input_shape, output_ch, kernel, padding, stride, group, need_group=""):
         left = padding
         right = kernel - padding
         input_ch, height, width = input_shape
@@ -228,12 +227,19 @@ class Spatial_Postion:
                 pos_conv.append([max(0, left-i*stride), min(left+height-i*stride, kernel), max(0, left-j*stride), min(left+width-j*stride, kernel)])
             self.pos_pre.append(pos_pre)
             self.pos_conv.append(pos_conv)
-        # self.input_neuron = np.arange(input_ch * height * width).reshape(input_shape)
-        # self.output_neuron = np.arange(output_ch * out_height * out_width).reshape((output_ch, out_height, out_width))
-        tmp_input_shape = (input_shape[1], input_shape[2], input_shape[0])
-        self.input_neuron = np.arange(input_ch * height * width).reshape(tmp_input_shape).transpose((2, 0, 1))
-        tmp_output_shape = (out_height, out_width, output_ch)
-        self.output_neuron = np.arange(output_ch * out_height * out_width).reshape(tmp_output_shape).transpose((2, 0, 1))
+
+        if need_group == "input":
+            print("input neurons id coded in group")
+            self.input_neuron = np.arange(input_ch * height * width).reshape(input_shape)
+        else:
+            tmp_input_shape = (input_shape[1], input_shape[2], input_shape[0])
+            self.input_neuron = np.arange(input_ch * height * width).reshape(tmp_input_shape).transpose((2, 0, 1))
+        if need_group == "output":
+            print("output neurons id coded in group")
+            self.output_neuron = np.arange(output_ch * out_height * out_width).reshape((output_ch, out_height, out_width)) 
+        else:
+            tmp_output_shape = (out_height, out_width, output_ch)
+            self.output_neuron = np.arange(output_ch * out_height * out_width).reshape(tmp_output_shape).transpose((2, 0, 1))
 
         self.group_in_ch = input_ch // group
         self.group_out_ch = output_ch // group
@@ -271,7 +277,7 @@ class Bias_Connect:
         return self.conns // self.out_conns
 
 
-def conv2d_connections(input_shape, module, num_chips=1, output_shape=[], prune=True):
+def conv2d_connections(input_shape, module, num_chips=1, output_shape=[], prune=True, need_group=""):
     assert input_shape[0] // module.groups == module.weight.shape[1]
     print("prune", prune)
     padding = module.padding[0]
@@ -282,7 +288,7 @@ def conv2d_connections(input_shape, module, num_chips=1, output_shape=[], prune=
     input_shape = (input_shape[0]//num_chips, *input_shape[1:])
     delay = 0
 
-    spatial = Spatial_Postion(input_shape, output_ch, kernel, padding, stride, group)
+    spatial = Spatial_Postion(input_shape, output_ch, kernel, padding, stride, group, need_group)
     connections = []
     with_bias = module.bias != None
     for k in range(num_chips):

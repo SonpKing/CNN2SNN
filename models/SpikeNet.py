@@ -104,17 +104,6 @@ class Scale(nn.Module):
     def set_scale(self, scale):
         self.weight.data *= scale
 
-class Pool_Scale(nn.Module):
-    def __init__(self, scale=1):
-        super(Pool_Scale, self).__init__()
-        self.pool = nn.AvgPool2d(2) #nn.AdaptiveAvgPool2d((1, 1))
-        self.scale = Scale()
-
-    def forward(self, x):
-        x = self.pool(x)
-        x = self.scale(x)
-        return x
-
 
 class SpikeNet(nn.Module):
     def __init__(self, net, vth, scale=100):

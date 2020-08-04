@@ -178,18 +178,18 @@ os.environ["CUDA_VISIBLE_DEVICES"]="0, 1, 2"
 # torch.save({"state_dict": state}, "checkpoint/0/applenet_normalise_scale.pth.tar")
 
 
-# validate
-from util import load_pretrained
-from convert.convert_applenet import normalise_module, convert_module
-from util.validate import validate
-from models import SpikeNet
-model = applenetv2_spike(8, vth=90.0)
-model = model.cuda()
-train_loader, val_loader = data_loader("/home/jinxb/Project/data/Darwin_data2", batch_size=1, img_size=32, workers=args.workers, dataset="imagenet") 
-args.pretrain = "checkpoint/0/applenet_normalise_scale.pth.tar"
-load_pretrained(model, args.pretrain, [])
-model = SpikeNet(model, vth=90.0)
-validate(val_loader, model, 100)
+# # validate
+# from util import load_pretrained
+# from convert.convert_applenet import normalise_module, convert_module
+# from util.validate import validate
+# from models import SpikeNet
+# model = applenetv2_spike(8, vth=90.0)
+# model = model.cuda()
+# train_loader, val_loader = data_loader("/home/jinxb/Project/data/Darwin_data2", batch_size=1, img_size=32, workers=args.workers, dataset="imagenet") 
+# args.pretrain = "checkpoint/0/applenet_normalise_scale.pth.tar"
+# load_pretrained(model, args.pretrain, [])
+# model = SpikeNet(model, vth=90.0)
+# validate(val_loader, model, 100)
 
 
 # # generate connections
@@ -201,6 +201,39 @@ validate(val_loader, model, 100)
 # load_pretrained(model, args.pretrain, [])
 # convert_module(model, "net", 1, "input", (3, 32, 32), prune=False)
 # mute_prune_connections("connections", "connections_new")
+
+# generate connections
+from util import load_pretrained
+# from convert import normalise_module, convert_module, mute_prune_connections
+from convert.cnnconn import conv2d_connections, avg_pool_connections, fc_connections
+from convert import save_connections
+model = applenetv2_spike(8, vth=100.0)
+train_loader, val_loader = data_loader("/home/jinxb/Project/data/Darwin_data2", batch_size=1, img_size=32, workers=args.workers, dataset="imagenet") 
+args.pretrain = "checkpoint/0/applenet_normalise_scale.pth.tar"
+load_pretrained(model, args.pretrain, [])
+parameters = []
+for name, params in model.named_parameters():
+    if "conv" in name:
+        parameters.append(params.data.numpy().transpose((2, 3, 1, 0)))
+    elif "fc" in name:
+        parameters.append(params.data.numpy().transpose((1, 0)))
+    else:
+        parameters.append(params.data.numpy())
+for param in parameters:
+    print(param.shape)
+DELAY = 0
+input_block0 = conv2d_connections((32, 32, 3), parameters[0], (1, 1),(2, 2), DELAY)
+block0_block1 = conv2d_connections((16, 16, 32), parameters[1], (1, 1),(2, 2), DELAY)
+block1_block2 = conv2d_connections((8, 8, 32), parameters[2], (1, 1),(2, 2), DELAY)
+block2_block3 = conv2d_connections((4, 4, 64), parameters[3], (1, 1),(2, 2), DELAY)
+block3_pool = avg_pool_connections((2, 2, 128), (2, 2), (0, 0), (2, 2), DELAY, np.round(parameters[4][0]/(2 * 2)))
+pool_fc = fc_connections(parameters[5], DELAY)
+save_connections(input_block0, "input_to_net.blocks.0.conv_chip0")
+save_connections(block0_block1, "net.blocks.0.conv_to_net.blocks.1.conv_chip0")
+save_connections(block1_block2, "net.blocks.1.conv_to_net.blocks.2.conv_chip0")
+save_connections(block2_block3, "net.blocks.2.conv_to_net.blocks.3.conv_chip0")
+save_connections(block3_pool, "net.blocks.3.conv_to_net.pool_chip0")
+save_connections(pool_fc, "net.pool_to_net.fc_chip0")
 
 
 # %%

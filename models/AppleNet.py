@@ -13,6 +13,17 @@ def conv1x1(in_channels, out_channels, stride=1, bias=False):
 def norm_layer(out_channels):
     return nn.BatchNorm2d(out_channels)
 
+class Pool_Scale(nn.Module):
+    def __init__(self, scale=1):
+        super(Pool_Scale, self).__init__()
+        self.pool = nn.AvgPool2d(2)
+        self.scale = Scale()
+
+    def forward(self, x):
+        x = self.pool(x)
+        x = self.scale(x)
+        return x
+
 
 SAVE_ACT = False
 IF = False
