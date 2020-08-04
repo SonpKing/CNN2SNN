@@ -130,7 +130,14 @@ class DarwinDev:
         self.spiketrain = []
         for i in range(3072):
             temp = [i, [1]]
-            self.spiketrain.append(temp)       
+            self.spiketrain.append(temp)     
+
+def read_connections(path):
+    with open(path, 'rb') as f:
+        data = pickle.load(f)
+    data = sorted(data, key=lambda x: x[0]) 
+    data = [item.tolist() for item in data]
+    return data
 
 
 if __name__ == "__main__":
