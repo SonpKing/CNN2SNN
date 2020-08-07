@@ -135,7 +135,7 @@ class DarwinDev:
 def read_connections(path):
     with open(path, 'rb') as f:
         data = pickle.load(f)
-    data = sorted(data, key=lambda x: x[0]) 
+    data = sorted(data, key=lambda x: (x[0], x[1])) 
     data = [item.tolist() for item in data]
     return data
 
