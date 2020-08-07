@@ -97,16 +97,16 @@ def rect2box(rect):
     x, y, w, h = rect
     return (x, y, x + w, y + h)
 
-def bb_isvalid(img, rect):
-    x, y, w, h = rect
-    img_bb = img[x : x + w, y : y + h]
-    return np.prod(img_bb.shape) != 0
+def bb_isvalid(img, rect, ratio=4.0):
+    _, _, w, h = rect
+    return 1.0 / ratio < w / h < ratio
 
 def generate_bb(img, box, resize=32):
     x1, y1, x2, y2 = box
     assert x1 < x2 and y1 < y2
-    img_bb = img[x1 : x2, y1 : y2]
-    img_bb = cv.resize(img_bb, (resize, resize))
+    img_bb = img[y1 : y2, x1 : x2]
+    if resize:
+        img_bb = cv.resize(img_bb, (resize, resize))
     return np.array(img_bb) / 255.0
 
 def show_bb(img, boxes, numShowRects=10000, show_time=5000):
@@ -141,10 +141,24 @@ def vis_bb(img, bbox_pred, scores, cls_inds, class_num, class_name, show_time=0)
     cv.waitKey(show_time)
 
 
+def filter_rects(img, rects, ratio=4.0):
+    boxes = []
+    for rect in rects:
+        if bb_isvalid(img, rect, ratio):
+            boxes.append(rect2box(rect))
+            if len(boxes) >= 50:
+                break
+        else:
+            print(rect)
+            continue
+    boxes = np.array(boxes)
+    return boxes
+
 if __name__ == '__main__':
-    cam = Camera()
+    # cam = Camera()
     searcher = SelectiveSearch()
-    img = cam.get_frame()
+    # img = cam.get_frame()
+    img = cv.imread("data/2.png")
     img = Resize(img)
     rects = searcher.select(img)
 
@@ -163,6 +177,7 @@ if __name__ == '__main__':
             # draw rectangle for region proposal till numShowRects
             if (i < numShowRects):
                 x, y, w, h = rect
+                # print(rect)
                 cv.rectangle( imOut, (x, y), (x + w, y + h), (0, 255, 0), 1, cv.LINE_AA )
             else:
                 break
