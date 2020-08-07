@@ -10,7 +10,7 @@ def sim():
     _, val_loader = data_loader("C:\\Users\\dell\\Desktop\\Detect_Data", batch_size=1, img_size=32, workers=1, dataset="imagenet") 
     ticks = 120
     total_acc  = 0
-    sim = DarwinDev("192.168.1.10", 7, 220000, "1_1config.txt")
+    sim = DarwinDev("192.168.1.10", 7, 220000, "1_1config.txt", class_num=7)
     for _ in range(10):
         for it, (inputs, targets) in enumerate(val_loader):
             # images = np.zeros((32, 32, 3))
@@ -19,7 +19,8 @@ def sim():
 
             inputs = inputs.numpy()[0]
             # inputs = np.zeros((32, 32, 3))
-            sim.reset()
+            # sim.reset()
+            sim.eliminate()
             # sleep(1.0)
             images = sim.fit_input(inputs)
             sim.run(images, ticks, show=False)

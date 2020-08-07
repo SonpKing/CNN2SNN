@@ -282,8 +282,9 @@ class configuration(object):
         self.mmc = 1
         self.enable = 1
 
-    def gen_config_file(self, filename, leaksign=0):
+    def gen_config_file(self, filename, filename2, leaksign=0):
         f = open(filename, 'w')
+        rf = open(filename2, "w")
         # f.write(str+'\n')
         for node in self.nodes:
             """
@@ -297,46 +298,62 @@ class configuration(object):
             tail_pack_head = node.get_tailpackhead()
             ss = "%011x" % tmp  # head
             f.write(ss + '\n')
+            rf.write(ss + '\n')
             # set neunum first and then clear
             tmp = node.setr_neuronnum()
             for t in tmp:
                 ss = "%011x" % (t + body_pack_head)
                 f.write(ss + '\n')
+                rf.write(ss + '\n')
             tmp = node.setr_status()
             for t in tmp:
                 ss = "%011x" % (t + body_pack_head)
                 f.write(ss + '\n')
+                rf.write(ss + '\n')
             tmp = node.setr_vth()
             for t in tmp:
                 ss = "%011x" % (t + body_pack_head)
                 f.write(ss + '\n')
+                rf.write(ss + '\n')
             tmp = node.setr_leak()
             for t in tmp:
                 ss = "%011x" % (t + body_pack_head)
                 f.write(ss + '\n')
+                rf.write(ss + '\n')
             tmp = node.setr_mode(leaksign=leaksign)
             for t in tmp:
                 ss = "%011x" % (t + body_pack_head)
                 f.write(ss + '\n')
+                rf.write(ss + '\n')
             tmp = node.setr_linker_baddr()
             for t in tmp:
                 ss = "%011x" % (t + body_pack_head)
                 f.write(ss + '\n')
+                rf.write(ss + '\n')
             tmp = node.setr_packet_baddr()
             for t in tmp:
                 ss = "%011x" % (t + body_pack_head)
                 f.write(ss + '\n')
+                rf.write(ss + '\n')
             tmp = node.setr_nizeroref()
             for t in tmp:
                 ss = "%011x" % (t + body_pack_head)
                 f.write(ss + '\n')
+                rf.write(ss + '\n')
             tmp = node.setr_nidelay()
             for index, t in enumerate(tmp):
                 if index == len(tmp) - 1 and not self.mmc:
                     ss = "%011x" % (t + tail_pack_head)
                 else:
                     ss = "%011x" % (t + body_pack_head)
+                    
                 f.write(ss + '\n')
+            for index, t in enumerate(tmp):
+                if index == len(tmp) - 1 :
+                    ss = "%011x" % (t + tail_pack_head)
+                else:
+                    ss = "%011x" % (t + body_pack_head)
+                rf.write(ss + '\n')
             if self.mmc:
                 linker, data = node.cal_addr()
                 for d in linker:
@@ -367,11 +384,14 @@ class configuration(object):
                 tail_pack_head = node.get_tailpackhead()
                 ss = "%011x" % tmp  # head
                 f.write(ss + '\n')
+                rf.write(ss + '\n')
                 tmp = node.setr_status(1, 1)
                 ss = "%011x" % (tmp[0] + body_pack_head)
                 f.write(ss + '\n')
+                rf.write(ss + '\n')
                 ss = "%011x" % (tmp[1] + tail_pack_head)
                 f.write(ss + '\n')
+                rf.write(ss + '\n')
         f.close()
 
 
