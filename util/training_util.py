@@ -170,6 +170,18 @@ def get_state(model, state_path, remove_layers, device=None):
                     print("remove layer", name)
     return state
 
+def rename_layers(state_path, name_mapping):
+    state = torch.load(state_path)['state_dict']
+    all_state = state.items()
+    state = {}
+    for name, weight in all_state:
+        if name in name_mapping:
+            print("rename", name, "with", name_mapping[name])
+            state[name_mapping[name]] = weight
+        else:
+            state[name] = weight
+    return state
+
 def load_pretrained(model, state_path, remove_layers=[], start_epoch=0, schedualer=None, device=None):
     print("load weights from {}".format(state_path))
     if schedualer:

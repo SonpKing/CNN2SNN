@@ -432,6 +432,11 @@ def chips_merge(name, num_chips, input_shape, path="connections/"):
         data[:,1] += nums*i
         save_connections(data, name+"_chip"+str(i)+"_new")
 
+def shuffle_for_view(data, input_shape):
+    shape = data.shape
+    return data.reshape(shape[0], *input_shape).permute(0, 2, 3, 1).reshape(shape[0], -1)
+
+
 if __name__ == "__main__":
     mute_prune_connections("connections", "connections_new")
     pass

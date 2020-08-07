@@ -2,10 +2,10 @@ from util import data_loader
 from simulation.nest_sim import Simulator
 import numpy as np
 def main():
-    _, val_loader = data_loader("/home/jinxb/Project/data/Darwin_data2", batch_size=1, img_size=32, workers=1, dataset="imagenet")
-    sim = Simulator(scale=35, reset_sub=True)
-    sim.create_net("connections_new/", "input", "net.classifier")
-    ticks = 100
+    _, val_loader = data_loader("/home/jinxb/Project/data/Detect_Data", batch_size=1, img_size=32, workers=1, dataset="imagenet")
+    sim = Simulator(scale=100, reset_sub=True)
+    sim.create_net("connections/", "input", "net.fc2")
+    ticks = 120
     total_acc  = 0
     for it, (inputs, targets) in enumerate(val_loader):
         inputs = inputs.numpy()[0]

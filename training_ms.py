@@ -88,43 +88,42 @@ os.environ["CUDA_VISIBLE_DEVICES"]="0, 1, 2"
 
 # %% find scale
 # import torch
-# state_path = "checkpoint/0/mobilenet_slim_darwin_normalise_2.pth.tar"
+# state_path = "checkpoint/0/mobilenet_slim_darwin_prune_ok_normalise.pth.tar"
 # from util import get_state
 # state = torch.load(state_path)['state_dict']
 # for key in state:
-#     state[key] = torch.round(state[key]*40)
+#     state[key] = torch.round(state[key]*100)
 #     state[key][state[key]>127] = 127
 #     state[key][state[key]<-127] = -127
-
 # data = []
 # for key in state:
 #     data += state[key].cpu().numpy().ravel().tolist()
 # data.sort()
 # length = len(data)
-# print(data[0], data[int(length*0.0001)], data[int(length*0.1)], data[int(length*0.9)], data[int(length*0.9999)], data[-1])
-# torch.save({"state_dict": state}, "checkpoint/0/mobilenet_slim_darwin_prune_ok_normalise_scale_40.pth.tar")
+# print(data[5], data[int(length*0.0001)], data[int(length*0.1)], data[int(length*0.9)], data[int(length*0.9999)], data[-5])
+# torch.save({"state_dict": state}, "checkpoint/0/mobilenet_slim_darwin_prune_ok_normalise_scale_100.pth.tar")
 
 
-# # validate
+# ## validate
 # from util import load_pretrained
 # from util.validate import validate
 # from models import SpikeNet
-# model = mobilenet_slim_spike(8, False, True, vth=35.0)
+# model = mobilenet_slim_spike(8, False, True, vth=50.0)
 # model = model.cuda()
 # train_loader, val_loader = data_loader("/home/jinxb/Project/data/Darwin_data2", batch_size=1, img_size=32, workers=args.workers, dataset="imagenet") 
-# args.pretrain = "checkpoint/0/mobilenet_slim_darwin_prune_ok_normalise_scale_35.pth.tar"
+# args.pretrain = "checkpoint/0/mobilenet_slim_darwin_prune_ok_normalise_scale_50.pth.tar"
 # load_pretrained(model, args.pretrain, [])
-# model = SpikeNet(model, vth=35.0)
+# model = SpikeNet(model, vth=50.0)
 # validate(val_loader, model, 300)
 
 
-# generate connections
-from util import load_pretrained
-from convert.convert_mobilenet_slim import convert_module
-from convert import mute_prune_connections
-model = mobilenet_slim_spike(8, False, True, vth=35.0)
-train_loader, val_loader = data_loader("/home/jinxb/Project/data/Darwin_data2", batch_size=1, img_size=32, workers=args.workers, dataset="imagenet") 
-args.pretrain = "checkpoint/0/mobilenet_slim_darwin_prune_ok_normalise_scale_35.pth.tar"
-load_pretrained(model, args.pretrain, [])
-convert_module(model, "net", 1, "input", (3, 32, 32), prune=True)
-mute_prune_connections("connections", "connections_new")
+# # generate connections
+# from util import load_pretrained
+# from convert.convert_mobilenet_slim import convert_module
+# from convert import mute_prune_connections
+# model = mobilenet_slim_spike(8, False, True, vth=50.0)
+# train_loader, val_loader = data_loader("/home/jinxb/Project/data/Darwin_data2", batch_size=1, img_size=32, workers=args.workers, dataset="imagenet") 
+# args.pretrain = "checkpoint/0/mobilenet_slim_darwin_prune_ok_normalise_scale_50.pth.tar"
+# load_pretrained(model, args.pretrain, [])
+# convert_module(model, "net", 1, "input", (3, 32, 32), prune=False)
+# # mute_prune_connections("connections", "connections_new")

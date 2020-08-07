@@ -29,7 +29,7 @@ def convert_module(module, pre_name, num_chips, last_layer, input_shape, prune, 
         output_shape = []
         pool_scale = module.scale.weight.detach().numpy()
         print("pool_scale", pool_scale)
-        conns = pool_connections(input_shape, module.pool, num_chips, scale = pool_scale, output_shape=output_shape, prune=prune, need_group=need_group)
+        conns = pool_connections(input_shape, module.pool, num_chips, scale = pool_scale, output_shape=output_shape, prune=prune)
         for i in range(len(conns)):
             save_connections(conns[i], last_layer+"_to_"+name+"_chip"+str(i))
         last_layer, input_shape = name, output_shape[0]
@@ -46,35 +46,23 @@ def convert_module(module, pre_name, num_chips, last_layer, input_shape, prune, 
 
 
     elif isinstance(module, Blocks2):
-        last_need_group = need_group == "input"
         for child_name, child_mod in module.named_children():
             child_name = name + "." + child_name
-            if isinstance(child_mod, Pool_Scale):
-                last_layer, input_shape, num_chips = convert_module(child_mod, child_name, num_chips, last_layer, input_shape, prune=prune, need_group="output")
-                last_need_group = True
-            elif isinstance(child_mod, nn.Conv2d) and last_need_group:
-                last_layer, input_shape, num_chips = convert_module(child_mod, child_name, num_chips, last_layer, input_shape, prune=prune, need_group="input")
-                last_need_group = False
-            else:
-                last_layer, input_shape, num_chips = convert_module(child_mod, child_name, num_chips, last_layer, input_shape, prune=prune)
+            last_layer, input_shape, num_chips = convert_module(child_mod, child_name, num_chips, last_layer, input_shape, prune=prune)
 
 
     elif isinstance(module, nn.Sequential) or name=="net":
-        last_need_group = False
+        view = True
         for name, mod in module.named_children():
             name = pre_name + "."+ name
-            if last_need_group:
-                last_layer, input_shape, num_chips = convert_module(mod, name, num_chips, last_layer, input_shape, prune=prune, need_group="input")
-                last_need_group = False
-            else:
-                last_layer, input_shape, num_chips = convert_module(mod, name, num_chips, last_layer, input_shape, prune=prune)
-            if isinstance(mod, Blocks2):
-                last_need_group = True
+            if isinstance(mod, nn.Linear) and view:
+                view = False
+                mod.weight.data = shuffle_for_view(mod.weight.data, input_shape)
+                print("@@shuffle the id due to view()@@")
+            last_layer, input_shape, num_chips = convert_module(mod, name, num_chips, last_layer, input_shape, prune=prune)
         
     else:
         print("ignore", name)
-
-    print(input_shape)
 
     return last_layer, input_shape, num_chips
 
