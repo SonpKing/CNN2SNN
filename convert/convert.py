@@ -323,7 +323,7 @@ def conv2d_connections(input_shape, module, num_chips=1, output_shape=[], prune=
     return connections
 
 
-def pool_connections(input_shape, module, num_chips=1, scale=100.0, output_shape=[], prune=True):
+def pool_connections(input_shape, module, num_chips=1, scale=100.0, output_shape=[], prune=True, need_group=""):
     stride = module.stride
     kernel = module.kernel_size
     assert stride == kernel
@@ -334,7 +334,7 @@ def pool_connections(input_shape, module, num_chips=1, scale=100.0, output_shape
 
     conn = []
     if not prune or weight!=0:
-        spatial = Spatial_Postion(input_shape, output_ch, kernel, 0, stride, group=output_ch)
+        spatial = Spatial_Postion(input_shape, output_ch, kernel, 0, stride, output_ch, need_group)
         channels, height, width = spatial.get_output_shape()
         for ch in range(channels):
             for h in range(height):
