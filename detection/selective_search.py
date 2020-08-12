@@ -137,8 +137,17 @@ def vis_bb(img, bbox_pred, scores, cls_inds, class_num, class_name, show_time=0)
         cv.rectangle(img, (int(xmin), int(abs(ymin)-15)), (int(xmin+box_w*0.55), int(ymin)), class_color[int(cls_indx)], -1)
         mess = '%s: %.3f' % (class_name[int(cls_indx)], scores[i])
         cv.putText(img, mess, (int(xmin), int(ymin)), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,0), 1)
-    cv.imshow( "Result", img)
-    cv.waitKey(show_time)
+    # cv.imshow( "Result", img)
+    # cv.waitKey(show_time)
+    b,g,r = cv.split(img) 
+    img = cv.merge([r,g,b])
+    from matplotlib import pyplot as plt 
+    fig = plt.figure(figsize=(4, 2))
+    ax1 = fig.add_subplot(111)
+    ax1.imshow(img)
+    ax1.axis('off')
+    plt.show()
+    
 
 
 def filter_rects(img, rects, ratio=4.0):

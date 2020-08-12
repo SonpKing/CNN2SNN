@@ -8,7 +8,7 @@ from util import data_loader
 
 def sim():
     _, val_loader = data_loader("C:\\Users\\dell\\Desktop\\Detect_Data", batch_size=1, img_size=32, workers=1, dataset="imagenet") 
-    ticks = 120
+    ticks = 200
     total_acc  = 0
     sim = DarwinDev("192.168.1.10", 7, 220000, "1_1config.txt", class_num=7)
     for _ in range(10):
@@ -35,10 +35,10 @@ def sim():
             # sleep(1.0)
 
 if __name__ == "__main__":
-    # create_config("connections_banana_100_7", 100, 1)
+    # create_config("connections_slim_70", 70, 1)
     sim()
-    # data = read_connections('connections_banana_100_7\\net.blocks.1.pool_to_net.blocks.2.conv_chip0')[1000:1200]
+    # data = read_connections('connections_slim_7\\net.blocks.1.0.conv_dw_to_net.blocks.1.0.conv_pwl_chip0')[:200]
     # for d in data:
     #     print(d)
 
-    # insert_zeros("connections_banana_100", 40, "connections_banana_100_7")
+    # insert_zeros("connections_slim", 40, "connections_slim_7")
