@@ -32,7 +32,7 @@ def create_config():
     neurontype = 1
     grid_size = 24
     leak = 0
-    vth = [100] + [35]*21
+    vth = [100] + [50]*21
     reset_mode = [1] + [1]*21
     delay = [0xaaaaaaaa, 0xaaaaaaaa]
 
@@ -46,39 +46,42 @@ def create_config():
     neuron_num = 256  # 每个节点神经元数目
 
     connfiles = [
-        'connections_new2/start_to_input_chip0',  # 1 3072
-        'connections_new2/input_to_net.conv_stem_chip0',  # 3072 3840
-        'connections_new2/net.conv_stem_to_net.blocks.0.0.conv_dw_chip0',  # 3840 3840
-        'connections_new2/net.blocks.0.0.conv_dw_to_net.blocks.0.0.conv_pw_chip0',  # 3840 6144
-        'connections_new2/net.blocks.0.0.conv_pw_to_net.blocks.1.0.conv_pw_chip0',  # 6144 12023
-        'connections_new2/net.blocks.1.0.conv_pw_to_net.blocks.1.0.conv_dw_chip0',  # 12023 3008
-        'connections_new2/net.blocks.1.0.conv_dw_to_net.blocks.1.0.conv_pwl_chip0',  # 3008 2048
-        'connections_new2/net.blocks.1.0.conv_pwl_to_net.blocks.1.1.conv_pw_chip0',  # 2048 7488
-        'connections_new2/net.blocks.1.1.conv_pw_to_net.blocks.1.1.conv_dw_chip0',  # 7488 7488
-        'connections_new2/net.blocks.1.1.conv_dw_to_net.blocks.1.1.conv_pwl_chip0',  # 7488 2048
-        'connections_new2/net.blocks.1.1.conv_pwl_to_net.blocks.2.0.conv_pw_chip0',  # 2048 6012
-        'connections_new2/net.blocks.2.0.conv_pw_to_net.blocks.2.0.conv_dw_chip0',  # 6012 1504
-        'connections_new2/net.blocks.2.0.conv_dw_to_net.blocks.2.0.conv_pwl_chip0',  # 1504 640
-        'connections_new2/net.blocks.2.0.conv_pwl_to_net.blocks.2.1.conv_pw_chip0',  # 640 3120
-        'connections_new2/net.blocks.2.1.conv_pw_to_net.blocks.2.1.conv_dw_chip0',  # 3120 3120
-        'connections_new2/net.blocks.2.1.conv_dw_to_net.blocks.2.1.conv_pwl_chip0',  # 3120 640
-        'connections_new2/net.blocks.2.1.conv_pwl_to_net.blocks.2.2.conv_pw_chip0',  # 640 1888
-        'connections_new2/net.blocks.2.2.conv_pw_to_net.blocks.2.2.conv_dw_chip0',  # 1888 1888
-        'connections_new2/net.blocks.2.2.conv_dw_to_net.blocks.2.2.conv_pwl_chip0',  # 1888 640
-        'connections_new2/net.blocks.2.2.conv_pwl_to_net.conv_head_chip0',  # 640 4064
-        'connections_new2/net.conv_head_to_net.global_pool_chip0',  # 4064 254
-        'connections_new2/net.global_pool_to_net.classifier_chip0'  # 254 8
+        'connections_no_prune_50_7/start_to_input_chip0',  # 1 3072
+        'connections_no_prune_50_7/input_to_net.conv_stem_chip0',  # 3072 3840
+        'connections_no_prune_50_7/net.conv_stem_to_net.blocks.0.0.conv_dw_chip0',  # 3840 3840
+        'connections_no_prune_50_7/net.blocks.0.0.conv_dw_to_net.blocks.0.0.conv_pw_chip0',  # 3840 6144
+        'connections_no_prune_50_7/net.blocks.0.0.conv_pw_to_net.blocks.1.0.conv_pw_chip0',  # 6144 12023
+        'connections_no_prune_50_7/net.blocks.1.0.conv_pw_to_net.blocks.1.0.conv_dw_chip0',  # 12023 3008
+        'connections_no_prune_50_7/net.blocks.1.0.conv_dw_to_net.blocks.1.0.conv_pwl_chip0',  # 3008 2048
+        'connections_no_prune_50_7/net.blocks.1.0.conv_pwl_to_net.blocks.1.1.conv_pw_chip0',  # 2048 7488
+        'connections_no_prune_50_7/net.blocks.1.1.conv_pw_to_net.blocks.1.1.conv_dw_chip0',  # 7488 7488
+        'connections_no_prune_50_7/net.blocks.1.1.conv_dw_to_net.blocks.1.1.conv_pwl_chip0',  # 7488 2048
+        'connections_no_prune_50_7/net.blocks.1.1.conv_pwl_to_net.blocks.2.0.conv_pw_chip0',  # 2048 6012
+        'connections_no_prune_50_7/net.blocks.2.0.conv_pw_to_net.blocks.2.0.conv_dw_chip0',  # 6012 1504
+        'connections_no_prune_50_7/net.blocks.2.0.conv_dw_to_net.blocks.2.0.conv_pwl_chip0',  # 1504 640
+        'connections_no_prune_50_7/net.blocks.2.0.conv_pwl_to_net.blocks.2.1.conv_pw_chip0',  # 640 3120
+        'connections_no_prune_50_7/net.blocks.2.1.conv_pw_to_net.blocks.2.1.conv_dw_chip0',  # 3120 3120
+        'connections_no_prune_50_7/net.blocks.2.1.conv_dw_to_net.blocks.2.1.conv_pwl_chip0',  # 3120 640
+        'connections_no_prune_50_7/net.blocks.2.1.conv_pwl_to_net.blocks.2.2.conv_pw_chip0',  # 640 1888
+        'connections_no_prune_50_7/net.blocks.2.2.conv_pw_to_net.blocks.2.2.conv_dw_chip0',  # 1888 1888
+        'connections_no_prune_50_7/net.blocks.2.2.conv_dw_to_net.blocks.2.2.conv_pwl_chip0',  # 1888 640
+        'connections_no_prune_50_7/net.blocks.2.2.conv_pwl_to_net.conv_head_chip0',  # 640 4064
+        'connections_no_prune_50_7/net.conv_head_to_net.global_pool_chip0',  # 4064 254
+        'connections_no_prune_50_7/net.global_pool_to_net.classifier_chip0'  # 254 8
     ]
-    tmp = []
+    tmp = []    
+    sets = set()
     for connfile in connfiles:
         with open(connfile, "rb") as f:
             data = pickle.load(f)
         tmp.append(np.max(data[:, 0]) + 2)
+        sets = sets.union(set(data[:, 2]))
     with open(connfiles[-1], "rb") as f:
         data = pickle.load(f)
     tmp.append(np.max(data[:, 1]) + 2)
     tmp.append(1)
     layerWidth = tmp
+    print(sorted(list(sets)))
     print(layerWidth)
     
     print("start")

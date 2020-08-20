@@ -58,6 +58,23 @@ def get_network_order(path):
     return layer_file_map
     
 
+def generate_connfiles(path):
+    layer_file_map = get_network_order(path)
+    ind_layer = "input0"
+    with open(os.path.join(path, layer_file_map[ind_layer]), "rb") as f:
+        conns = pickle.load(f)
+    start_file = generate_forward(set(conns[:, 0]), path)
+    connfiles = [os.path.join(path, start_file)]
+    total_neurons = [max(conns[:,0])+2, max(conns[:,0])+2]
+    while ind_layer in layer_file_map:
+        file = layer_file_map[ind_layer]
+        connfiles.append(os.path.join(path, file))
+        _, ind_layer = parse_name(file)
+        with open(connfiles[-1], "rb") as f:
+            conns = pickle.load(f)
+            total_neurons.append(max(conns[:,1])+2)
+    return connfiles, total_neurons
+
 def mute_prune_connections(path, save_path):
     files = os.listdir(path)
     print("total", len(files), "files")
@@ -111,13 +128,17 @@ def mute_prune_connections(path, save_path):
     
     for layer in layer_shuffle:
         if "input" in layer:
-            conns = []
-            for nid in layer_shuffle[layer].values():
-                conns.append((nid, nid, 1.0, 0))
-            print("generate", len(conns), "forward connections")
-            save_connections(conns, "start_to_input_chip0", save_path)
+            generate_forward(layer_shuffle[layer].values(), save_path)
             break
 
+
+def generate_forward(neuron_ids, save_path):
+    conns = []
+    for nid in neuron_ids:
+        conns.append((nid, nid, 1.0, 0))
+    print("generate", len(conns), "forward connections")
+    save_connections(conns, "start_to_input_chip0", save_path)
+    return "start_to_input_chip0"
         
 
 

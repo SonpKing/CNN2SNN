@@ -44,7 +44,7 @@ def nms(boxes, scores, nms_thresh=0.5):
         height = np.maximum(1e-28, miny2 - maxy1)
         inter = width * height
 
-        iou = inter / np.min(([areas[i]] * len(order[1:]), areas[order[1:]]), 0) #inter / (areas[i] + areas[order[1:]] - inter) #
+        iou = inter / (areas[i] + areas[order[1:]] - inter) #inter / np.min(([areas[i]] * len(order[1:]), areas[order[1:]]), 0) #
         keep.append(i)
         inds = np.where(iou <= nms_thresh)[0]
         order = order[inds + 1]
@@ -53,8 +53,10 @@ def nms(boxes, scores, nms_thresh=0.5):
     return keep
 
 
-def generate_boxes(rects, cls_pred, cls_thresh=0.5, nms_thresh=0.5):
+def generate_boxes(rects, cls_pred, cls_thresh=0.5, nms_thresh=0.5, scores_rm=[]):
     scores, cls_inds = cls_score(cls_pred)
+    for ind in scores_rm:
+        scores[cls_inds==ind] = 0
     print(scores)
     mask = np.where(scores >= cls_thresh)
     scores = scores[mask]

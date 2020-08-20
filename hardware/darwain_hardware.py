@@ -27,7 +27,7 @@ def read_image(file_path, size=32):
     img_obj = img_obj.resize((size, size), Image.BILINEAR)
     img_array = np.array(img_obj, dtype=np.uint8).astype(np.float)
     img_array = img_array / 255.0
-    img_array = img_array.transpose((2, 0, 1)).ravel()
+    img_array = img_array.ravel()
     print(img_array.shape)
     return img_array
 
@@ -52,7 +52,7 @@ class DarwinDev:
     def run(self, image, ticks=105, show=False):
         inputlist, rowlist = self.mfc_to_com(image)
         # read_vt(1, 1, list(range(8)))
-        self.spikes_all = np.zeros(10)
+        self.spikes_all = np.zeros(10)   
         for i in range(ticks):
             if show: 
                 print ('======tick=========  ' + str(i))
@@ -62,8 +62,9 @@ class DarwinDev:
             self.spikes_all += spikes
             if show:
                 self.trans.send_read_ins("config/read.txt")
+                
 
-        # for i in range(10):
+        # for i in range(20):
         #     self.trans.tick_alone(show) 
         # self.reset() 
         
@@ -76,6 +77,10 @@ class DarwinDev:
         print("send clear done")
         self.trans.send_config("config/1_1enable.txt")
         print("send enable done")
+    
+    def eliminate(self):
+        self.trans.asic_reset()
+        self.trans.send_config("config/1_1re_config.txt")
 
     def fit_input(self, inputs):
         if inputs.shape[-1] == 3:
@@ -130,14 +135,15 @@ class DarwinDev:
         self.spiketrain = []
         for i in range(3072):
             temp = [i, [1]]
-            self.spiketrain.append(temp)     
+            self.spiketrain.append(temp)      
+
 
 def read_connections(path):
     with open(path, 'rb') as f:
         data = pickle.load(f)
-    data = sorted(data, key=lambda x: x[0]) 
+    data = sorted(data, key=lambda x: (x[0], x[1]))
     data = [item.tolist() for item in data]
-    return data
+    return data 
 
 
 if __name__ == "__main__":

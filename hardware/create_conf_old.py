@@ -6,8 +6,6 @@ from mapping import gen_input as gen_in
 from mapping import count
 from mapping import map2
 import os
-import numpy as np
-from convert import generate_connfiles
 
 
 def get_headpack(x, y):
@@ -29,11 +27,17 @@ def get_tailpackhead(y):
     y1 = y % 24
     return (y1 << 38) | (0b01 << 36) | (0b1 << 32)
 
-def create_config(path, Vth, reset):
+def create_config():
     neurontype = 1
     grid_size = 24
     leak = 0
+    vth = [100] + [90] * 6
+    reset_mode = [1] + [0] * 6
+    layerWidth = [3073, 3073, 8193, 2049, 1025, 513, 129, 9, 1]
     delay = [0xaaaaaaaa, 0xaaaaaaaa]
+
+    
+    netDepth = len(vth) + 1
     leaksign = -1
     board_num = 1  # 板子个数
     childboard_num = 3  # 单块板子的子板个数
@@ -41,21 +45,15 @@ def create_config(path, Vth, reset):
     node_num = 24  # 单块芯片一条边的节点个数，单块芯片有node_num* node_num个节点
     neuron_num = 256  # 每个节点神经元数目
 
-    connfiles, layerWidth = generate_connfiles(path)
-    layerWidth += [1]
-    netDepth = len(connfiles) + 1
-    vth = [100] + [Vth] * (netDepth - 2)
-    reset_mode = [1] + [reset] * (netDepth - 2)
-    for connfile in connfiles:
-        print(connfile)
-    print(layerWidth)
-
-    sets = set()
-    for connfile in connfiles:
-        with open(connfile, "rb") as f:
-            data = pickle.load(f)
-        sets = sets.union(set(data[:, 2]))
-    print(sorted(list(sets)))
+    connfiles = [
+        'connections/start_to_input_chip0',  # 1 3072
+        'connections/input_to_net.blocks.0.conv_chip0',  # 3072 3840
+        'connections/net.blocks.0.conv_to_net.blocks.1.conv_chip0',
+        'connections/net.blocks.1.conv_to_net.blocks.2.conv_chip0',
+        'connections/net.blocks.2.conv_to_net.blocks.3.conv_chip0',
+        'connections/net.blocks.3.conv_to_net.pool_chip0',
+        'connections/net.pool_to_net.fc_chip0'
+    ]
     
     print("start")
     flag = 0
@@ -200,7 +198,7 @@ def create_config(path, Vth, reset):
 
     # ------------------------------------- input ----------------------------------------------总共只要一个
     # 加载输入层
-    f = open(connfiles[0], 'rb')
+    f = open('connections/start_to_input_chip0', 'rb')
     in_conv1 = pickle.load(f)
     f.close()
 

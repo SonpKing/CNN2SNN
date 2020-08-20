@@ -127,7 +127,8 @@ def buildNetwork(ID, connfiles, netDepth, layerWidth, node_list, zerolist, delay
 
     conf = cfg.configuration(nos)
     filename = os.path.join("config", ID +"config.txt") 
-    conf.gen_config_file(filename, leaksign = leaksign)
+    filename2 = os.path.join("config", ID +"re_config.txt")
+    conf.gen_config_file(filename, leaksign = leaksign, filename2=filename2)
     # print("done")
 
 
