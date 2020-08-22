@@ -10,3 +10,5 @@ __*
 !__init__.py
 !.gitignore
 !README.md
+creat_conf*
+!creat_conf.py
