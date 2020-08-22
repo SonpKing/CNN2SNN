@@ -8,7 +8,7 @@ def softmax(X, axis=-1):
     return s
 
 
-def cls_score(cls_pred):
+def cls_score(cls_pred, boxes):
     '''
     cls_pred may look like following
     [
@@ -17,9 +17,13 @@ def cls_score(cls_pred):
         ...
     ]
     '''
+    # boxes = np.array(boxes)
+    # print(boxes.shape)
+    # areas = (boxes[:, 2] - boxes[:, 0])* (boxes[:, 3] - boxes[:, 1])
+    # ratio  = np.log10(areas / np.min(areas)) * 2 / 3
     all_class = softmax(cls_pred, 1)
     cls_inds = np.argmax(all_class, 1)
-    scores = all_class[(np.arange(all_class.shape[0]), cls_inds)]
+    scores = all_class[(np.arange(all_class.shape[0]), cls_inds)] #* ratio
     return scores, cls_inds
 
 def nms(boxes, scores, nms_thresh=0.5):
@@ -44,7 +48,7 @@ def nms(boxes, scores, nms_thresh=0.5):
         height = np.maximum(1e-28, miny2 - maxy1)
         inter = width * height
 
-        iou = inter / (areas[i] + areas[order[1:]] - inter) #inter / np.min(([areas[i]] * len(order[1:]), areas[order[1:]]), 0) #
+        iou = inter / np.min(([areas[i]] * len(order[1:]), areas[order[1:]]), 0) #inter / (areas[i] + areas[order[1:]] - inter) #
         keep.append(i)
         inds = np.where(iou <= nms_thresh)[0]
         order = order[inds + 1]
@@ -54,7 +58,7 @@ def nms(boxes, scores, nms_thresh=0.5):
 
 
 def generate_boxes(rects, cls_pred, cls_thresh=0.5, nms_thresh=0.5, scores_rm=[]):
-    scores, cls_inds = cls_score(cls_pred)
+    scores, cls_inds = cls_score(cls_pred, rects)
     for ind in scores_rm:
         scores[cls_inds==ind] = 0
     print(scores)

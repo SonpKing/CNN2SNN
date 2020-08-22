@@ -124,4 +124,5 @@ class SpikeNet(nn.Module):
     def get_result(self):
         return self.output.total_num
 
-    
+def to_tensor(inputs):
+    return torch.tensor(inputs).float()

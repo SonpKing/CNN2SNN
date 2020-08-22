@@ -34,6 +34,7 @@ def sim():
             
             # sleep(1.0)
 
+
 if __name__ == "__main__":
     # create_config("connections_slim_70", 70, 1)
     sim()

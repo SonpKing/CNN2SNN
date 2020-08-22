@@ -55,17 +55,17 @@ def GaussianBlur(img):
 def Resize(img, newHeight=500):
     newWidth = int( img.shape[1] * newHeight / img.shape[0] )
     img = cv.resize( img, (newWidth, newHeight) )
-    img = img[int(newHeight * 0.1): int(newHeight * 0.9), int(newWidth * 0.1): int(newWidth * 0.9)]
+    # img = img[int(newHeight * 0.1): int(newHeight * 0.9), int(newWidth * 0.1): int(newWidth * 0.9)]
     return img
 
 
 class SelectiveSearch:
-    def __init__(self, threads=1):
+    def __init__(self, threads=1, quality=True):
         cv.setUseOptimized( True )
         cv.setNumThreads(threads)
         self.process = []
         self.set_preprocess(GaussianBlur)
-        self.quality = True
+        self.quality = quality
 
     def set_preprocess(self, func):
         #func shouldn't 
@@ -99,7 +99,7 @@ def rect2box(rect):
 
 def bb_isvalid(img, rect, ratio=4.0):
     _, _, w, h = rect
-    return 1.0 / ratio < w / h < ratio
+    return 1.0 / ratio < w / h < ratio and w > 20 and h > 20
 
 def generate_bb(img, box, resize=32):
     x1, y1, x2, y2 = box
@@ -125,9 +125,9 @@ def show_bb(img, boxes, numShowRects=10000, show_time=5000):
     cv.waitKey(show_time)
     
 
-def vis_bb(img, bbox_pred, scores, cls_inds, class_num, class_name, show_time=0):
+def vis_bb(img, bbox_pred, scores, cls_inds, class_name, show_time=0, show=False):
     img = img.copy()
-    class_color = [(np.random.randint(255),np.random.randint(255),np.random.randint(255)) for _ in range(class_num)]
+    class_color = [(np.random.randint(255),np.random.randint(255),np.random.randint(255)) for _ in range(len(class_name))]
     for i, box in enumerate(bbox_pred):
         cls_indx = cls_inds[i]
         xmin, ymin, xmax, ymax = box
@@ -137,28 +137,32 @@ def vis_bb(img, bbox_pred, scores, cls_inds, class_num, class_name, show_time=0)
         cv.rectangle(img, (int(xmin), int(abs(ymin)-15)), (int(xmin+box_w*0.55), int(ymin)), class_color[int(cls_indx)], -1)
         mess = '%s: %.3f' % (class_name[int(cls_indx)], scores[i])
         cv.putText(img, mess, (int(xmin), int(ymin)), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,0), 1)
-    # cv.imshow( "Result", img)
-    # cv.waitKey(show_time)
-    b,g,r = cv.split(img) 
-    img = cv.merge([r,g,b])
-    from matplotlib import pyplot as plt 
-    fig = plt.figure(figsize=(4, 2))
-    ax1 = fig.add_subplot(111)
-    ax1.imshow(img)
-    ax1.axis('off')
-    plt.show()
+    if show==False:
+        # cv.imshow( "Result", img)
+        # cv.waitKey(show_time)
+        # cv.destroyAllWindows()
+        return img
+    else:
+        b,g,r = cv.split(img) 
+        img = cv.merge([r,g,b])
+        from matplotlib import pyplot as plt 
+        fig = plt.figure(figsize=(4, 2))
+        ax1 = fig.add_subplot(111)
+        ax1.imshow(img)
+        ax1.axis('off')
+        return fig
     
 
 
-def filter_rects(img, rects, ratio=4.0):
+def filter_rects(img, rects, ratio=4.0, size=51):
     boxes = []
     for rect in rects:
         if bb_isvalid(img, rect, ratio):
             boxes.append(rect2box(rect))
-            if len(boxes) >= 50:
+            if len(boxes) >= size:
                 break
         else:
-            print(rect)
+            # print(rect)
             continue
     boxes = np.array(boxes)
     return boxes
