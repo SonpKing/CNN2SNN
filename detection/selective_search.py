@@ -9,6 +9,7 @@ Use "l" to display less rects, 'm' to display more rects, "q" to quit.
 import sys
 import numpy as np
 import cv2 as cv
+from util.util import Timer
 
 class Camera:
     def __init__(self):
@@ -60,7 +61,7 @@ def Resize(img, newHeight=500):
 
 
 class SelectiveSearch:
-    def __init__(self, threads=1, quality=True):
+    def __init__(self, threads=1, quality=1):
         cv.setUseOptimized( True )
         cv.setNumThreads(threads)
         self.process = []
@@ -78,19 +79,27 @@ class SelectiveSearch:
         return img
 
     def select(self, img):
+        timer = Timer()
         img = self.preprocess(img)
         # create Selective Search Segmentation Object using default parameters
         ss = cv.ximgproc.segmentation.createSelectiveSearchSegmentation()
         # set input image on which we will run segmentation
         ss.setBaseImage(img)
         # cv.imshow( "Output", img )
-        if self.quality:
+        if self.quality==1:
             ss.switchToSelectiveSearchQuality()
-        else:
+        elif self.quality==0:
             ss.switchToSelectiveSearchFast()
+        else:
+            ss.switchToSingleStrategy()
+            ss.addStrategy(cv.ximgproc.segmentation.createSelectiveSearchSegmentationStrategyColor())
+            ss.addStrategy(cv.ximgproc.segmentation.createSelectiveSearchSegmentationStrategyFill())
+            ss.addStrategy(cv.ximgproc.segmentation.createSelectiveSearchSegmentationStrategySize())
+            ss.addStrategy(cv.ximgproc.segmentation.createSelectiveSearchSegmentationStrategyTexture())
         # run selective search segmentation on input image
+        timer.record("search init over")
         rects = ss.process()
-        print( 'Total Number of Region Proposals: {}'.format( len( rects ) ) )
+        timer.record('Total Number of Region Proposals: {}'.format( len( rects ) ) )
         return rects
 
 def rect2box(rect):

@@ -15,12 +15,17 @@ from .visual.web_visual import show_async
 from .l_short_comm import Get
 from multiprocessing import Manager
 import torch
+from hardware.darwain_hardware import DarwinDev, generate_multi_input, fit_input
+from util.util import Timer
+    
 
 def start_service(IP, Port, conns, thread_num, res_que, plt_que, ctl_que):
     recv_pool = PoolHelper(thread_num)
-    searcher = SelectiveSearch()
+    searcher = SelectiveSearch(quality=-1)
     application_id = 7
-    with ServerListener(IP, Port, 100, 5) as listener:
+    timer = Timer()
+    total_num = thread_num * 3
+    with ServerListener(IP, Port, None, 5) as listener:
         print("detection server listening")
         with listener.accept() as conn:
             print("detection server connected")
@@ -28,12 +33,19 @@ def start_service(IP, Port, conns, thread_num, res_que, plt_que, ctl_que):
                 try:
                     data = recv_until_ok(conn)
                     img = bytearray2img(data)
-                    package_inputs, boxes = generate_input(searcher, img, thread_num * 3)
-                    print("generate input over")
+                    timer.record("starting loop")
+                    package_inputs, boxes = generate_input(searcher, img, total_num)
+                    timer.record("generate input over")
                     distribute(conns, package_inputs, application_id)
-                    print("distribute input to inferencer over")
-                    res = collect_output(conns, recv_pool, res_que, thread_num * 3)
-                    print("collect output over")
+                    timer.record("distribute input to inferencer over")
+                    res = collect_output(conns, recv_pool, res_que, total_num)
+                    # new_conns = []
+                    # for i in res:
+                    #     if i%3 == 0:
+                    #         new_conns.append(conns[i//3])
+                    # conns = new_conns
+                    # total_num = len(conns)
+                    timer.record("collect output over")
                     
                     is_water, is_house, is_broker, is_person = process_output(img, res, boxes, plt_que)
                     # robot_IP = "192.168.1.100"
@@ -47,18 +59,19 @@ def start_service(IP, Port, conns, thread_num, res_que, plt_que, ctl_que):
                     #         Get(robot_IP, robot_Port, 104, bytearray(2))
                     #     if is_house or is_water:
                     #         Get(robot_IP, robot_Port, 105, bytearray(2))
+                    timer.record("process output over")
                     conn.send(application_id, bytearray(1))
                 except Exception as e:
                     print('An exception is raised when processing the client request', e)
-                    recv_pool.close()
+                    # recv_pool.close()
                     raise(e)
                 if not ctl_que.empty():
-                    recv_pool.close()
+                    # recv_pool.close()
                     break
+    # recv_pool.close()
 
 def generate_input(searcher, img, boundbox_num=48, package_num=3):
     rects = searcher.select(img)
-    print("bound boxes generation done")
     boundbox_num = math.ceil(boundbox_num // package_num) * package_num
     boxes = filter_rects(img, rects, size=boundbox_num)
     img_bbs = []
@@ -96,13 +109,13 @@ def collect_output(conns, recv_pool, res_que, total_num):
                 ind, outs = bytearray_to_class_out(bytes_data)
                 for i in range(len(ind)):
                     res[ind[i]] = outs[i]
-                print("currently", len(res), "result collected")
+                # print("currently", len(res), "result collected")
         else:
             sleep(0.1)
             cur_try_time += 1
-            # if cur_try_time > max_try_time:
-            #     return res  
-    print(res)
+            if cur_try_time > max_try_time:
+                return res  
+    # print(res)
     return res
 
 def process_output(img, res, boxes, plt_que):
@@ -117,8 +130,9 @@ def process_output(img, res, boxes, plt_que):
                 new_boxes.append(boxes[i])
                 cls_pred.append(res[i])
         print("receive totally", len(new_boxes), "results")
-        boxes, cls_inds, scores = generate_boxes(boxes, cls_pred, cls_thresh=0.1, nms_thresh=0.3, scores_rm=[2])
-        print(boxes)
+        # boxes, cls_inds, scores = generate_boxes(boxes, cls_pred, cls_thresh=0.1, nms_thresh=0.3, scores_rm=[2])
+        boxes, cls_inds, scores = generate_boxes(boxes, cls_pred, cls_thresh=0.01, nms_thresh=0.9, scores_rm=[2])
+        # print(boxes)
         print(cls_inds)
         print(scores)
         class_name = ['broker', 'diba', 'floor', 'water', 'person', 'house']
@@ -135,46 +149,18 @@ def process_output(img, res, boxes, plt_que):
                 is_broker = True
     return is_water, is_house, is_broker, is_person
 
-
-def inference_async(pretrained_path, vth, in_que, res_que):
-    print("start inference instance")
-    model = mobilenet_slim_spike(14,_if=False, vth=70.0)
-    load_pretrained(model, pretrained_path, [], device=torch.device("cpu"))
-    # print("ok")
-    # model = SpikeNet(model, vth=vth)
-    print("loaded model in pool process")
-    while True:
-        if in_que.empty():
-            print
-            sleep(0.01)
-        else:
-            bytes_data = in_que.get()
-            if not isinstance(bytes_data, bytearray):
-                print("exit inference_async")
-                res_que.put("exit")
-                break
-            inds, imgs = bytearray_to_package(bytes_data)
-            inputs = to_tensor(fit_input(imgs))
-            print("start infering")
-            result = eval_single(inputs, model, 1)
-            print("infer over", inds)
-            res_que.put(class_out_to_bytearray(inds, result[:, 8:]))
-
-
 def receive_async(conn, res_que):
     try:
         res_que.put(conn.recv())
-        print("get output")
+        # print("get output")
     except:
         print("queue is full")
         exit(0)
-
-
-class FalseConnection():
-    def __init__(self, in_que, res_que, helper, pretrained_path, vth):
+       
+class AbsConnection:
+    def __init__(self, in_que, res_que):
         self.in_que = in_que
         self.res_que = res_que
-        helper.execute(inference_async, (pretrained_path, vth, self.in_que, self.res_que,))
 
     def send(self, args):
         self.in_que.put(args)
@@ -188,6 +174,65 @@ class FalseConnection():
 
     def close(self):
         self.in_que.put("exit")
+
+def inference_async(pretrained_path, vth, in_que, res_que):
+    print("start inference instance")
+    model = mobilenet_slim_spike(14,_if=False, vth=70.0)
+    load_pretrained(model, pretrained_path, [], device=torch.device("cpu"))
+    # print("ok")
+    # model = SpikeNet(model, vth=vth)
+    print("loaded model in pool process")
+    while True:
+        if in_que.empty():
+            sleep(0.01)
+        else:
+            bytes_data = in_que.get()
+            if not isinstance(bytes_data, bytearray):
+                print("exit inference_async")
+                res_que.put("exit")
+                break
+            inds, imgs = bytearray_to_package(bytes_data)
+            inputs = to_tensor(fit_input_batch(imgs))
+            print("start infering")
+            result = eval_single(inputs, model, 1)
+            print("infer over", inds)
+            res_que.put(class_out_to_bytearray(inds, result[:, 8:]))
+
+class FalseConnection(AbsConnection):
+    def __init__(self, in_que, res_que, helper, pretrained_path, vth):
+        super().__init__(in_que, res_que)
+        helper.execute(inference_async, (pretrained_path, vth, self.in_que, self.res_que,))
+
+def inference_dev(IP, Port, class_num, in_que, res_que):
+    print("starting init dev")
+    dev = DarwinDev(IP, Port, 220000, class_num)
+    while True:
+        if in_que.empty():
+            sleep(0.01)
+        else:
+            bytes_data = in_que.get()
+            if not isinstance(bytes_data, bytearray):
+                print("exit inference_async")
+                res_que.put("exit")
+                break
+            inds, imgs = bytearray_to_package(bytes_data)
+            img0 = fit_input(imgs[0])
+            img1 = fit_input(imgs[1])
+            img2 = fit_input(imgs[2])
+            inputlist, rowlist = generate_multi_input(img0, img1, img2)
+            print("start infering", inds, IP)
+            dev.eliminate('all')
+            dev.run(inputlist, rowlist, 200)
+            result = dev.get_result()
+            result = np.array(result).reshape((3,-1))
+            print("infer over", inds, IP)
+            res_que.put(class_out_to_bytearray(inds, result[:, 8:]))
+
+
+class DarwinConnection(AbsConnection):
+    def __init__(self, IP, Port, class_num, in_que, res_que, helper):
+        super().__init__(in_que, res_que)
+        helper.execute(inference_dev, (IP, Port, class_num, self.in_que, self.res_que,))
         
 # from demo.visual.WebDraw import WebDraw
 # import matplotlib.pyplot as plt
@@ -212,15 +257,17 @@ class FalseConnection():
 #             continue
 
 def server_run(IP, Port):
-    thread_num = 16
+    IPs = [2, 3, 6, 7, 11, 12, 13, 14, 15, 16, 17, 18, 19, 21]#, 20, 8
+    thread_num = len(IPs)
     inference_pool = PoolHelper(thread_num)
     conns = []
-    pretrained_path = "checkpoint\\0\\slim_cls14_limitcrop_normalise_70.pth.tar"
+    pretrained_path = "checkpoint\\0\\slim_nice_normalise_70.pth.tar"
     vth = 70
     manager = Manager()
-    for _ in range(thread_num):
-        conns.append(FalseConnection(manager.Queue(), manager.Queue(), inference_pool, pretrained_path, vth))
-
+    class_num = 14
+    for i in range(thread_num):
+        # conns.append(FalseConnection(manager.Queue(), manager.Queue(), inference_pool, pretrained_path, vth))
+        conns.append(DarwinConnection("192.168.1."+str(IPs[i]), 7, class_num, manager.Queue(), manager.Queue(), inference_pool))
     res_que = manager.Queue()
 
     plt_que = manager.Queue()
@@ -228,7 +275,7 @@ def server_run(IP, Port):
     ctl_que = manager.Queue()
     try:
         master_process = Process(target=start_service, args=(IP, Port, conns, thread_num, res_que, plt_que, ctl_que,)) 
-        visual_process = Process(target=show_async, args=(plt_que, ctl_que,))    
+        visual_process = Process(target=show_async, args=(plt_que, ctl_que,))  
         master_process.start()
         visual_process.start()
         master_process.join()

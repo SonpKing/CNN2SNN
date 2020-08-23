@@ -37,7 +37,7 @@ def binTohex(num):
 
 
 # 建立网络
-def buildNetwork(ID, connfiles, netDepth, layerWidth, node_list, zerolist, delay, vth, leak, reset, leaksign, grid_size=24):
+def buildNetwork(ID, connfiles, netDepth, layerWidth, node_list, zerolist, delay, vth, leak, reset, leaksign, grid_size=64):
     '''
     connfiles:list,层与层之间的连接文件
     netDepth: int, 网络深度
@@ -127,8 +127,7 @@ def buildNetwork(ID, connfiles, netDepth, layerWidth, node_list, zerolist, delay
 
     conf = cfg.configuration(nos)
     filename = os.path.join("config", ID +"config.txt") 
-    filename2 = os.path.join("config", ID +"re_config.txt")
-    conf.gen_config_file(filename, leaksign = leaksign, filename2=filename2)
+    conf.gen_config_file(filename, leaksign = leaksign)
     # print("done")
 
 

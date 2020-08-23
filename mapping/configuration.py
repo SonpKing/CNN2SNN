@@ -8,7 +8,7 @@ class neuron(object):
 
 class node(object):
     # address unit is word = 4 Bytes
-    def __init__(self, node_number, zero_ref, neurons, delay=[0, 0], vth=16, leak=0, reset=0, leaksign=0, grid_size=24,
+    def __init__(self, node_number, zero_ref, neurons, delay=[0, 0], vth=16, leak=0, reset=0, leaksign=0, grid_size=64,
                  npu_r=0, npu_m=1, ni_r=2):
         import math
         self.npu_r = npu_r
@@ -78,7 +78,7 @@ class node(object):
 
     def get_headpack(self):  # from (grid_size,grid_size) to (x,y)       dst_port: 0 -> 1,  2 -> 2, 3 -> 4
         #tmp = (self.x << 18) | (self.y << 12) | (self.grid_size << 6) | (self.grid_size - 1)
-        tmp = (self.x << 18) | (self.y << 12) | (24 << 6) | (23)  #  input 点s设为(49,49)
+        tmp = (self.x << 18) | (self.y << 12) | (48 << 6) | (47)  #  input 点s设为(49,49)
         x1 = self.x % 24
         y1 = self.y % 24
         if x1 == 23:
@@ -282,9 +282,9 @@ class configuration(object):
         self.mmc = 1
         self.enable = 1
 
-    def gen_config_file(self, filename, filename2, leaksign=0):
+    def gen_config_file(self, filename, leaksign=0):
         f = open(filename, 'w')
-        rf = open(filename2, "w")
+        rf = open("re_config.txt", "w")
         # f.write(str+'\n')
         for node in self.nodes:
             """
@@ -296,50 +296,51 @@ class configuration(object):
             #print("%011x" % tmp)
             body_pack_head = node.get_bodypackhead()
             tail_pack_head = node.get_tailpackhead()
+            con_head = '40000'
             ss = "%011x" % tmp  # head
-            f.write(ss + '\n')
-            rf.write(ss + '\n')
+            f.write(con_head + ss + '\n')
+            rf.write(con_head + ss + '\n')
             # set neunum first and then clear
             tmp = node.setr_neuronnum()
             for t in tmp:
                 ss = "%011x" % (t + body_pack_head)
-                f.write(ss + '\n')
-                rf.write(ss + '\n')
+                f.write(con_head + ss + '\n')
+                rf.write(con_head + ss + '\n')
             tmp = node.setr_status()
             for t in tmp:
                 ss = "%011x" % (t + body_pack_head)
-                f.write(ss + '\n')
-                rf.write(ss + '\n')
+                f.write(con_head + ss + '\n')
+                rf.write(con_head + ss + '\n')
             tmp = node.setr_vth()
             for t in tmp:
                 ss = "%011x" % (t + body_pack_head)
-                f.write(ss + '\n')
-                rf.write(ss + '\n')
+                f.write(con_head + ss + '\n')
+                rf.write(con_head + ss + '\n')
             tmp = node.setr_leak()
             for t in tmp:
                 ss = "%011x" % (t + body_pack_head)
-                f.write(ss + '\n')
-                rf.write(ss + '\n')
+                f.write(con_head + ss + '\n')
+                rf.write(con_head + ss + '\n')
             tmp = node.setr_mode(leaksign=leaksign)
             for t in tmp:
                 ss = "%011x" % (t + body_pack_head)
-                f.write(ss + '\n')
-                rf.write(ss + '\n')
+                f.write(con_head + ss + '\n')
+                rf.write(con_head + ss + '\n')
             tmp = node.setr_linker_baddr()
             for t in tmp:
                 ss = "%011x" % (t + body_pack_head)
-                f.write(ss + '\n')
-                rf.write(ss + '\n')
+                f.write(con_head + ss + '\n')
+                rf.write(con_head + ss + '\n')
             tmp = node.setr_packet_baddr()
             for t in tmp:
                 ss = "%011x" % (t + body_pack_head)
-                f.write(ss + '\n')
-                rf.write(ss + '\n')
+                f.write(con_head + ss + '\n')
+                rf.write(con_head + ss + '\n')
             tmp = node.setr_nizeroref()
             for t in tmp:
                 ss = "%011x" % (t + body_pack_head)
-                f.write(ss + '\n')
-                rf.write(ss + '\n')
+                f.write(con_head + ss + '\n')
+                rf.write(con_head + ss + '\n')
             tmp = node.setr_nidelay()
             for index, t in enumerate(tmp):
                 if index == len(tmp) - 1 and not self.mmc:
@@ -347,30 +348,30 @@ class configuration(object):
                 else:
                     ss = "%011x" % (t + body_pack_head)
                     
-                f.write(ss + '\n')
+                f.write(con_head + ss + '\n')
             for index, t in enumerate(tmp):
                 if index == len(tmp) - 1 :
                     ss = "%011x" % (t + tail_pack_head)
                 else:
                     ss = "%011x" % (t + body_pack_head)
-                rf.write(ss + '\n')
+                rf.write(con_head + ss + '\n')
             if self.mmc:
                 linker, data = node.cal_addr()
                 for d in linker:
                     h = (1 << 31) | (node.npu_m << 29) | d[0]
                     ss = "%011x" % (h + body_pack_head)
-                    f.write(ss + '\n')
+                    f.write(con_head + ss + '\n')
                     ss = "%011x" % (d[1] + body_pack_head)
-                    f.write(ss + '\n')
+                    f.write(con_head + ss + '\n')
                 for index, d in enumerate(data):
                     h = (1 << 31) | (node.npu_m << 29) | d[0]
                     ss = "%011x" % (h + body_pack_head)
-                    f.write(ss + '\n')
+                    f.write(con_head + ss + '\n')
                     if index == len(data) - 1:
                         ss = "%011x" % (d[1] + tail_pack_head)
                     else:
                         ss = "%011x" % (d[1] + body_pack_head)
-                    f.write(ss + '\n')
+                    f.write(con_head + ss + '\n')
             # tmp=node.setr_nizeroref()
             # ss="%011x" % (tmp[0]+body_pack_head)
             # f.write(ss+'\n')
@@ -383,15 +384,15 @@ class configuration(object):
                 body_pack_head = node.get_bodypackhead()
                 tail_pack_head = node.get_tailpackhead()
                 ss = "%011x" % tmp  # head
-                f.write(ss + '\n')
-                rf.write(ss + '\n')
+                f.write(con_head + ss + '\n')
+                rf.write(con_head + ss + '\n')
                 tmp = node.setr_status(1, 1)
                 ss = "%011x" % (tmp[0] + body_pack_head)
-                f.write(ss + '\n')
-                rf.write(ss + '\n')
+                f.write(con_head + ss + '\n')
+                rf.write(con_head + ss + '\n')
                 ss = "%011x" % (tmp[1] + tail_pack_head)
-                f.write(ss + '\n')
-                rf.write(ss + '\n')
+                f.write(con_head + ss + '\n')
+                rf.write(con_head + ss + '\n')
         f.close()
 
 
@@ -402,4 +403,4 @@ if __name__ == "__main__":
     no = node(0, (24, 24), ns)
     nos = [no]
     conjf = configuration(nos)
-    configuration.gen_config_file("tt.txt")
+    # configuration.gen_config_file("tt.txt")

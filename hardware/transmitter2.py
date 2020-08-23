@@ -237,16 +237,16 @@ class Transmitter(object):
         return spike
 
     
-    def auto_tick(self, length):
+    def auto_tick(self, length, class_num):
         '''
         发送上个tick数据
         '''
         ins = struct.pack("I", (8 << 28) + length)
         self.socket_inst.sendall(ins)
         reply = self.socket_inst.recv(1024)
-        spikeA = [0] * 15
-        spikeB = [0] * 15
-        spikeC = [0] * 15
+        spikeA = [0] * class_num
+        spikeB = [0] * class_num
+        spikeC = [0] * class_num
         sa = False
         sb = False
         sc = False
@@ -256,7 +256,7 @@ class Transmitter(object):
             result = self.read_output(reply)
             for j in range(len(result)):
                 pr.append(hex(result[j]))
-            print(pr)
+            # print(pr)
             # for i in range(0, len(result), 6):
             #     if int(result[i+3] % (1 << 32) // (1 << 16)) < 15 :
             #         spikeA[int(result[i+3] % (1 << 32) // (1 << 16))] += 1
@@ -314,38 +314,71 @@ class Transmitter(object):
 
 
 
-    def send_input_3chip(self, input_spk_A, input_spk_B, input_spk_C, input_row):
+    # def send_input_3chip(self, input_spk_A, input_spk_B, input_spk_C, input_row):
 
-        with open(input_row, 'r') as row:
-            row_list = row.readlines()
-        with open(input_spk_A, 'r') as file_A:
-            input_list_A = file_A.readlines()
-        with open(input_spk_B, 'r') as file_B:
-            input_list_B = file_B.readlines()
-        with open(input_spk_C, 'r') as file_C:
-            input_list_C = file_C.readlines()
-        spikeA = [0] * 15
-        spikeB = [0] * 15
-        spikeC = [0] * 15
+    #     with open(input_row, 'r') as row:
+    #         row_list = row.readlines()
+    #     with open(input_spk_A, 'r') as file_A:
+    #         input_list_A = file_A.readlines()
+    #     with open(input_spk_B, 'r') as file_B:
+    #         input_list_B = file_B.readlines()
+    #     with open(input_spk_C, 'r') as file_C:
+    #         input_list_C = file_C.readlines()
+    #     spikeA = [0] * 15
+    #     spikeB = [0] * 15
+    #     spikeC = [0] * 15
+    #     pos = 0
+    #     idx = 0
+        
+    #     while pos < len(input_list_A):
+    #         pr = []
+    #         rank = int(row_list[idx].strip(), 16)
+    #         idx += 1
+    #         input_tick = input_list_A[pos:rank]
+    #         input_tick = input_tick + input_list_B[pos:rank]
+    #         input_tick = input_tick + input_list_C[pos:rank]
+    #         # print('----------tick---------' + str(idx - 1))
+    #         self.send_per_tick_mulit(input_tick, rank, rank, rank)
+    #         reply = self.socket_inst.recv(1024)
+    #         reply_len = len(reply)
+    #         if reply_len > 4 :
+    #             result = self.read_output(reply)
+    #             for j in range(len(result)):
+    #                 pr.append(hex(result[j]))
+    #             print(pr)
+    #             for i in range(0, len(result), 6):
+    #                 spikeA[int(result[i+3] % (1 << 32) // (1 << 16))] += 1
+    #                 spikeB[int(result[i+4] % (1 << 32) // (1 << 16))] += 1
+    #                 spikeC[int(result[i+5] % (1 << 32) // (1 << 16))] += 1
+                
+    #         pos = rank
+    #         # if idx == 6:
+    #         #     self.send_read_ins('read.txt')
+           
+    #     return spikeA
+
+
+    def send_input_3chip_list(self, input_list, row_list, class_num):
+
+        spikeA = [0] * class_num
+        spikeB = [0] * class_num
+        spikeC = [0] * class_num
         pos = 0
         idx = 0
         
-        while pos < len(input_list_A):
+        while pos < len(input_list) / 3:
             pr = []
             rank = int(row_list[idx].strip(), 16)
             idx += 1
-            input_tick = input_list_A[pos:rank]
-            input_tick = input_tick + input_list_B[pos:rank]
-            input_tick = input_tick + input_list_C[pos:rank]
             # print('----------tick---------' + str(idx - 1))
-            self.send_per_tick_mulit(input_tick, rank, rank, rank)
+            self.send_per_tick_mulit(input_list, rank, rank, rank)
             reply = self.socket_inst.recv(1024)
             reply_len = len(reply)
             if reply_len > 4 :
                 result = self.read_output(reply)
                 for j in range(len(result)):
                     pr.append(hex(result[j]))
-                print(pr)
+                # print(pr)
                 for i in range(0, len(result), 6):
                     spikeA[int(result[i+3] % (1 << 32) // (1 << 16))] += 1
                     spikeB[int(result[i+4] % (1 << 32) // (1 << 16))] += 1
@@ -355,41 +388,5 @@ class Transmitter(object):
             # if idx == 6:
             #     self.send_read_ins('read.txt')
            
-        return spikeA
-
-
-    def send_input_3chip_list(self, input_list_A, input_list_B, input_list_C, row_list):
-
-        spikeA = [0] * 15
-        spikeB = [0] * 15
-        spikeC = [0] * 15
-        pos = 0
-        idx = 0
-        
-        while pos < len(input_list_A):
-            pr = []
-            rank = int(row_list[idx].strip(), 16)
-            idx += 1
-            input_tick = input_list_A[pos:rank]
-            input_tick = input_tick + input_list_B[pos:rank]
-            input_tick = input_tick + input_list_C[pos:rank]
-            # print('----------tick---------' + str(idx - 1))
-            self.send_per_tick_mulit(input_tick, rank, rank, rank)
-            reply = self.socket_inst.recv(1024)
-            reply_len = len(reply)
-            if reply_len > 4 :
-                result = self.read_output(reply)
-                for j in range(len(result)):
-                    pr.append(hex(result[j]))
-                print(pr)
-                for i in range(0, len(result), 6):
-                    spikeA[int(result[i+3] % (1 << 32) // (1 << 16))] += 1
-                    spikeB[int(result[i+4] % (1 << 32) // (1 << 16))] += 1
-                    spikeC[int(result[i+5] % (1 << 32) // (1 << 16))] += 1
-                
-            pos = rank
-            # if idx == 6:
-            #     self.send_read_ins('read.txt')
-           
-        return spikeA
+        return spikeA + spikeB + spikeC
 

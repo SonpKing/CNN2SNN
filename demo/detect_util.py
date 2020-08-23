@@ -108,7 +108,7 @@ class PoolHelper:
         self.close()
     
 
-def fit_input(inputs):
+def fit_input_batch(inputs):
     assert np.max(inputs) <= 1.0 and np.min(inputs) >= 0.0
     assert inputs.shape[3] == 3
     return inputs.transpose((0, 3, 1, 2))

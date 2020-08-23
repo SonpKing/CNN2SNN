@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 class node_input(object):
     #address unit is word = 4 Bytes
-    def __init__(self, node_number, cons, neurons={}, grid_size=24):
+    def __init__(self, node_number, cons, neurons={}, grid_size=64):
         import math
         self.grid_size = grid_size
-        self.body_pack_head = ((self.grid_size - 1) << 38) | (0b1 << 32)
+        self.body_pack_head = ((24 - 1) << 38) | (0b1 << 32)
         self.choosebits = math.ceil(math.log(grid_size, 2))
         self.set_nodenum(node_number)
         self.init(neurons, cons)
@@ -14,25 +14,30 @@ class node_input(object):
         self.y = node_number % self.grid_size
 
     def get_headpack(self): #from (grid_size,grid_size) to (x,y)       dst_port: 0 -> 1,  2 -> 2, 3 -> 4
-        tmp=(self.x<<18)|(self.y<<12)|(self.grid_size<<6)|(self.grid_size-1)
+        # tmp=(self.x<<18)|(self.y<<12)|(self.grid_size<<6)|(self.grid_size-1)
+        tmp=(self.x<<18)|(self.y<<12)|(48<<6)|(47)
         # if self.x==self.grid_size-1 and self.y==self.grid_size-1:
         #     return (self.y<<38)|(0b10<<36)|(0b1<<32)|(0b1<<29)|(0x1<<24)|tmp
         # elif self.x==self.grid_size-1:
         #     return (self.y<<38)|(0b10<<36)|(0b1<<32)|(0b1<<29)|(0x2<<24)|tmp
         # else:
         #     return (self.y<<38)|(0b10<<36)|(0b1<<32)|(0b1<<29)|(0x4<<24)|tmp
-        if self.x==self.grid_size-1 and self.y==self.grid_size-1:
-            return ((self.grid_size-1)<<38)|(0b10<<36)|(0b1<<32)|(0b1<<29)|(0x1<<24)|tmp
-        elif self.x==self.grid_size-1:
-            return ((self.grid_size-1)<<38)|(0b10<<36)|(0b1<<32)|(0b1<<29)|(0x2<<24)|tmp
+        x1 = self.x % 24
+        y1 = self.y % 24
+        if x1==23 and y1==23:
+            return (23<<38)|(0b10<<36)|(0b1<<32)|(0b1<<29)|(0x1<<24)|tmp
+        elif x1==23:
+            return (23<<38)|(0b10<<36)|(0b1<<32)|(0b1<<29)|(0x2<<24)|tmp
         else:
-            return ((self.grid_size-1)<<38)|(0b10<<36)|(0b1<<32)|(0b1<<29)|(0x4<<24)|tmp
+            return (23<<38)|(0b10<<36)|(0b1<<32)|(0b1<<29)|(0x4<<24)|tmp
+
     def get_bodypackhead(self):
         # return (self.y<<38)|(0b1<<32)
         return self.body_pack_head
+
     def get_tailpackhead(self):
         # return (self.y<<38)|(0b01<<36)|(0b1<<32)
-        return ((self.grid_size-1)<<38)|(0b01<<36)|(0b1<<32)
+        return ((24-1)<<38)|(0b01<<36)|(0b1<<32)
 
     def set_neurons(self, neurons={}):
         self.neurons = neurons
@@ -95,9 +100,10 @@ def gen_inputdata(cons,
                   spikes,
                   input_node_map,
                   maxtime,
+                  in_head,
                   filename="input.txt",
                   row_file="row.txt",
-                  grid_size=24):
+                  grid_size=64):
     '''
     cons:连接文件
     spikes:输入脉冲文件
@@ -114,6 +120,7 @@ def gen_inputdata(cons,
     times = spike_time(spikes, maxtime)
     count = 0
     res = []
+    
     for i in range(maxtime + 1)[1:]:
         res.append(count)
         neu_set = times[i]
@@ -123,7 +130,7 @@ def gen_inputdata(cons,
             body_pack_head = node.get_bodypackhead()
             tail_pack_head = node.get_tailpackhead()
             ss = "%011x" % tmp2  #head
-            f.write(ss + '\n')
+            f.write(in_head + ss + '\n')
             count += 1
             flag = 0
             sig = 0
@@ -135,20 +142,20 @@ def gen_inputdata(cons,
                     else:
                         flag = 0
                         ss = "%011x" % (((sig << 16) | wt) + body_pack_head)
-                        f.write(ss + '\n')
+                        f.write(in_head + ss + '\n')
                         count += 1
                 if flag == 1:
                     ss = "%011x" % (((sig << 16) | tmp[-1]) + tail_pack_head)
-                    f.write(ss + '\n')
+                    f.write(in_head + ss + '\n')
                     count += 1
                 else:
                     sig = tmp[-1]
                     ss = "%011x" % (((sig << 16) | 0) + tail_pack_head)
-                    f.write(ss + '\n')
+                    f.write(in_head + ss + '\n')
                     count += 1
             else:
                 ss = "%011x" % tail_pack_head
-                f.write(ss + '\n')
+                f.write(in_head + ss + '\n')
                 count += 1
     res.append(count)
     f.close()
@@ -164,7 +171,9 @@ def gen_inputdata_list(cons,
                   spikes,
                   input_node_map,
                   maxtime,
-                  grid_size=24):
+                  in_head,
+                  grid_size=64,
+                  ):
     '''
     cons:连接文件
     spikes:输入脉冲文件
@@ -182,6 +191,7 @@ def gen_inputdata_list(cons,
     times = spike_time(spikes, maxtime)
     count = 0
     res = []
+  
     for i in range(maxtime + 1)[1:]:
         res.append(count)
         neu_set = times[i]
@@ -191,7 +201,7 @@ def gen_inputdata_list(cons,
             body_pack_head = node.get_bodypackhead()
             tail_pack_head = node.get_tailpackhead()
             ss = "%011x" % tmp2  #head
-            input_list.append(ss)
+            input_list.append(in_head + ss)
             
             count += 1
             flag = 0
@@ -204,20 +214,20 @@ def gen_inputdata_list(cons,
                     else:
                         flag = 0
                         ss = "%011x" % (((sig << 16) | wt) + body_pack_head)
-                        input_list.append(ss)
+                        input_list.append(in_head + ss)
                         count += 1
                 if flag == 1:
                     ss = "%011x" % (((sig << 16) | tmp[-1]) + tail_pack_head)
-                    input_list.append(ss)
+                    input_list.append(in_head + ss)
                     count += 1
                 else:
                     sig = tmp[-1]
                     ss = "%011x" % (((sig << 16) | 0) + tail_pack_head)
-                    input_list.append(ss)
+                    input_list.append(in_head + ss)
                     count += 1
             else:
                 ss = "%011x" % tail_pack_head
-                input_list.append(ss)
+                input_list.append(in_head + ss)
                 count += 1
     res.append(count)
     

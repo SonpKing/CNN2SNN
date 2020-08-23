@@ -53,7 +53,7 @@ def map_chip11(nodes, node_link, layer_num, layer_id, forward_node):
                 empty_t -= 1
             else:
                 empty_b -= 1
-            first_layer.append((x + 1, y + 1))
+            first_layer.append((x + 25, y + 25))
         nodelist.append(first_layer)
         if layer_num == 1:
             print("layer_num == 1")
@@ -149,7 +149,7 @@ def map_chip11(nodes, node_link, layer_num, layer_id, forward_node):
                             yt0 -= (xt0 - 16 + 1) // 7
                             xt0 = (xt0 - 16 + 1) % 7 + 16
                         empty_b -= 1
-                    cur_res[id] = (xt0 + 1, yt0 + 1)
+                    cur_res[id] = (xt0 + 25, yt0 + 25)
                     # print(xt0,yt0,cur_res[id])
                     occupy_all[xt0, yt0] = 1
                 node_next.append(cur_res[id])
@@ -165,9 +165,10 @@ def map_chip11(nodes, node_link, layer_num, layer_id, forward_node):
     if layer_id == layer_num:
         last_zero = []
         for i in range(nodes[-1]):
-            last_zero.append((23, 23))
+            last_zero.append((47, 47))
         zerolist.append(last_zero)
         flag = 1
+        
     ######  映射未结束，虚拟转发forward
     else:
         forwardnodes = nodes[layer_id]

@@ -1,6 +1,6 @@
 from hardware import DarwinDev
-from hardware.create_conf707 import create_config
-from hardware.darwain_hardware import read_image, read_connections
+from hardware.create_conf import create_config
+from hardware.darwain_hardware import read_image, read_connections, fit_input, generate_multi_input
 import numpy as np 
 from time import sleep
 from util import data_loader
@@ -13,8 +13,8 @@ def sim():
     _, val_loader = data_loader("data\Detect_Data", batch_size=3, img_size=32, workers=1, dataset="imagenet") 
     ticks = 200
     total_acc  = 0
-    class_num = 15
-    sim = DarwinDev("192.168.3.10", 7, 220000, class_num*batch_size)
+    class_num = 14
+    sim = DarwinDev("192.168.3.10", 7, 220000, class_num)
     
     # for _ in range(1):
     # for idx in range(10):
@@ -22,18 +22,19 @@ def sim():
         # inputs = read_image("data/86.jpg")
         shows = [False]*100
         input1 = inputs.numpy()[0]
-        image1 = sim.fit_input(input1)
+        image1 = fit_input(input1)
         input2 = inputs.numpy()[1]
-        image2 = sim.fit_input(input2)
+        image2 = fit_input(input2)
         input3 = inputs.numpy()[2]
-        image3 = sim.fit_input(input3)
+        image3 = fit_input(input3)
 
         # print(input1==input2)
 
         sim.eliminate('all')
         print("eliminate")
         s_time = time.time()
-        sim.run(image1, image2, image3, ticks, show=shows[it], )
+        inputlist, rowlist = generate_multi_input(image1, image2, image3)
+        sim.run(inputlist, rowlist, ticks, show=shows[it] )
         print("hardware time:", time.time() - s_time)
 
         # sim.reset()
