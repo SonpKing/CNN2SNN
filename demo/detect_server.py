@@ -17,6 +17,7 @@ from multiprocessing import Manager
 import torch
 from hardware.darwain_hardware import DarwinDev, generate_multi_input, fit_input
 from util.util import Timer
+import time
     
 
 def start_service(IP, Port, conns, thread_num, res_que, plt_que, ctl_que):
@@ -25,6 +26,9 @@ def start_service(IP, Port, conns, thread_num, res_que, plt_que, ctl_que):
     application_id = 7
     timer = Timer()
     total_num = thread_num * 3
+    last_robot_cmd = -1
+    last_rotate_time = time.time()
+    last_robot_time = time.time()
     with ServerListener(IP, Port, None, 5) as listener:
         print("detection server listening")
         with listener.accept() as conn:
@@ -48,17 +52,40 @@ def start_service(IP, Port, conns, thread_num, res_que, plt_que, ctl_que):
                     timer.record("collect output over")
                     
                     is_water, is_house, is_broker, is_person = process_output(img, res, boxes, plt_que)
-                    # robot_IP = "192.168.1.100"
-                    # robot_Port = 13001
-                    # if is_broker or is_house or is_water or is_person:
-                    #     if is_person:
-                    #         Get(robot_IP, robot_Port, 100, bytearray(2))
-                    #     elif is_broker:
-                    #         Get(robot_IP, robot_Port, 102, bytearray(2))
-                    #         Get(robot_IP, robot_Port, 103, bytearray(2))
-                    #         Get(robot_IP, robot_Port, 104, bytearray(2))
-                    #     if is_house or is_water:
-                    #         Get(robot_IP, robot_Port, 105, bytearray(2))
+                    print(is_water, is_house, is_broker, is_person)
+                    try:
+                        robot_IP = "192.168.2.100"
+                        robot_Port = 13001
+                        cur_time = time.time()
+                        if cur_time - last_robot_time > 10:
+                            last_robot_cmd = -1
+                        if cur_time - last_rotate_time < 30:
+                            can_rotate = False
+                        else:
+                            can_rotate = True
+                        if is_broker or is_house or is_water or is_person:
+                            if is_person and last_robot_cmd != 0:
+                                Get(robot_IP, robot_Port, 100, bytearray(2))
+                                Get(robot_IP, robot_Port, 104, bytearray(2))
+                                print("!!!!!!!!!!!!!!!send person", last_robot_cmd)
+                                last_robot_cmd = 0
+                                last_robot_time = cur_time
+                            elif is_water and last_robot_cmd != 1:
+                                Get(robot_IP, robot_Port, 102, bytearray(2))
+                                Get(robot_IP, robot_Port, 103, bytearray(2))
+                                Get(robot_IP, robot_Port, 104, bytearray(2))
+                                print("!!!!!!!!!!!!!!!send broker", last_robot_cmd)
+                                last_robot_cmd = 1
+                                last_robot_time = cur_time
+                            elif (is_house or is_broker) and last_robot_cmd != 2 and can_rotate:
+                                # Get(robot_IP, robot_Port, 105, bytearray(2))
+                                # print("!!!!!!!!!!!!!!!send rotate", last_robot_cmd)
+                                last_robot_cmd = 2
+                                last_rotate_time = cur_time
+                                last_robot_time = cur_time
+
+                    except:
+                        pass
                     timer.record("process output over")
                     conn.send(application_id, bytearray(1))
                 except Exception as e:
@@ -96,8 +123,9 @@ def distribute(conns, package_inputs, application_id=7):
 def collect_output(conns, recv_pool, res_que, total_num):
     for conn in conns:
         recv_pool.execute(receive_async, (conn, res_que,))
-    max_try_time = 100
-    cur_try_time = 0
+    # max_try_time = 100
+    # cur_try_time = 0
+    last_time = time.time()
     res = dict()
     while len(res) < total_num:
         if not res_que.empty():
@@ -112,9 +140,11 @@ def collect_output(conns, recv_pool, res_que, total_num):
                 # print("currently", len(res), "result collected")
         else:
             sleep(0.1)
-            cur_try_time += 1
-            if cur_try_time > max_try_time:
-                return res  
+            # cur_try_time += 1
+            # if cur_try_time > max_try_time:
+            #     return res  
+            if(time.time() - last_time > 2):
+                break
     # print(res)
     return res
 
@@ -130,8 +160,8 @@ def process_output(img, res, boxes, plt_que):
                 new_boxes.append(boxes[i])
                 cls_pred.append(res[i])
         print("receive totally", len(new_boxes), "results")
-        # boxes, cls_inds, scores = generate_boxes(boxes, cls_pred, cls_thresh=0.1, nms_thresh=0.3, scores_rm=[2])
-        boxes, cls_inds, scores = generate_boxes(boxes, cls_pred, cls_thresh=0.01, nms_thresh=0.9, scores_rm=[2])
+        boxes, cls_inds, scores = generate_boxes(boxes, cls_pred, cls_thresh=0.65, nms_thresh=0.4, scores_rm=[])
+        # boxes, cls_inds, scores = generate_boxes(boxes, cls_pred, cls_thresh=0.01, nms_thresh=0.9, scores_rm=[2])
         # print(boxes)
         print(cls_inds)
         print(scores)
@@ -205,7 +235,7 @@ class FalseConnection(AbsConnection):
 
 def inference_dev(IP, Port, class_num, in_que, res_que):
     print("starting init dev")
-    dev = DarwinDev(IP, Port, 220000, class_num)
+    dev = DarwinDev(IP, Port, 220000, class_num, False) #####!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     while True:
         if in_que.empty():
             sleep(0.01)
@@ -266,8 +296,8 @@ def server_run(IP, Port):
     manager = Manager()
     class_num = 14
     for i in range(thread_num):
-        # conns.append(FalseConnection(manager.Queue(), manager.Queue(), inference_pool, pretrained_path, vth))
-        conns.append(DarwinConnection("192.168.1."+str(IPs[i]), 7, class_num, manager.Queue(), manager.Queue(), inference_pool))
+        conns.append(FalseConnection(manager.Queue(), manager.Queue(), inference_pool, pretrained_path, vth))
+        # conns.append(DarwinConnection("192.168.1."+str(IPs[i]), 7, class_num, manager.Queue(), manager.Queue(), inference_pool))
     res_que = manager.Queue()
 
     plt_que = manager.Queue()

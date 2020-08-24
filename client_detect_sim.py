@@ -1,3 +1,5 @@
+# import sys
+# sys.path.remove('/opt/ros/kinetic/lib/python2.7/dist-packages')
 from detection import SelectiveSearch, Camera, generate_boxes, generate_bb, show_bb, vis_bb, Resize, filter_rects
 from detection.generate_img_from_video import generate_img
 import cv2 as cv
@@ -19,7 +21,8 @@ from multiprocessing import Process
 
 if __name__ == "__main__":
     # server_run("localhost", 10080)
-    client_run("localhost", 10080)
+    # client_run("localhost", 10080)
+    client_run("192.168.1.202", 10080)
 
     # p1=Process(target=server_run, args=("localhost", 10080,)) #必须加,号 cxcxcx
     # p2=Process(target=client_run, args=("localhost", 10080,))

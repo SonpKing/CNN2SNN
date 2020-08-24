@@ -18,7 +18,8 @@ from multiprocessing import Process
 
 
 if __name__ == "__main__":
-    server_run("localhost", 10080)
+    # server_run("localhost", 10080)
+    server_run("192.168.1.202", 10080)
     # client_run("localhost", 10080)
 
     # p1=Process(target=server_run, args=("localhost", 10080,)) #必须加,号 cxcxcx
@@ -30,7 +31,7 @@ if __name__ == "__main__":
 
 
 
-    # generate_img("C:\\Users\\dell\\Desktop\\videos\\video8.mp4", "C:\\Users\\dell\\Pictures\\collect", 77, seed="new6")
+    # sgenerate_img("C:\\Users\\dell\\Desktop\\videos\\video3.mov", "C:\\Users\\dell\\Pictures\\Saved Pictures", 200, seed="new6")
 # # cam = Camera()
 # # # cam.display_video()
 # # img = cam.get_frame()
