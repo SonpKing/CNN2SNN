@@ -7,6 +7,7 @@ max_activations*/*
 .*
 __*
 *.tmp
+*.zip
 !__init__.py
 !.gitignore
 !README.md
