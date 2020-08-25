@@ -53,7 +53,7 @@ class Camera:
 def GaussianBlur(img):
     return cv.GaussianBlur(img, (5,5),0)
 
-def Resize(img, newHeight=500):
+def Resize(img, newHeight=400):
     newWidth = int( img.shape[1] * newHeight / img.shape[0] )
     img = cv.resize( img, (newWidth, newHeight) )
     # img = img[int(newHeight * 0.1): int(newHeight * 0.9), int(newWidth * 0.1): int(newWidth * 0.9)]
@@ -91,13 +91,8 @@ class SelectiveSearch:
         elif self.quality==0:
             ss.switchToSelectiveSearchFast()
         else:
-            ss.switchToSingleStrategy()
-            ss.addStrategy(cv.ximgproc.segmentation.createSelectiveSearchSegmentationStrategyColor())
-            ss.addStrategy(cv.ximgproc.segmentation.createSelectiveSearchSegmentationStrategyFill())
-            ss.addStrategy(cv.ximgproc.segmentation.createSelectiveSearchSegmentationStrategySize())
-            ss.addStrategy(cv.ximgproc.segmentation.createSelectiveSearchSegmentationStrategyTexture())
+            ss.switchToSingleStrategy(100)
         # run selective search segmentation on input image
-        timer.record("search init over")
         rects = ss.process()
         timer.record('Total Number of Region Proposals: {}'.format( len( rects ) ) )
         return rects
@@ -142,12 +137,17 @@ def vis_bb(img, bbox_pred, scores, cls_inds, class_name, show_time=0, show=False
         xmin, ymin, xmax, ymax = box
         box_w = int(xmax - xmin)
         # print(xmin, ymin, xmax, ymax)
+        # newHeight = 1080
+        # scale = newHeight / img.shape[0]
+        # newWidth = int(img.shape[1] * scale)
+        # xmin, ymin, xmax, ymax = xmin*scale, ymin*scale, xmax*scale, ymax*scale
+        # cv.resize(img, (newWidth, newHeight))
         cv.rectangle(img, (int(xmin), int(ymin)), (int(xmax), int(ymax)), class_color[int(cls_indx)], 1)
-        cv.rectangle(img, (int(xmin), int(abs(ymin)-15)), (int(xmin+box_w*0.55), int(ymin)), class_color[int(cls_indx)], -1)
+        cv.rectangle(img, (int(xmin), int(ymin)), (int(xmin+box_w*0.55), int(ymin+15)), class_color[int(cls_indx)], -1)
         mess = '%s: %.3f' % (class_name[int(cls_indx)], scores[i])
-        cv.putText(img, mess, (int(xmin), int(ymin)), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,0), 1)
+        cv.putText(img, mess, (int(xmin), int(ymin+15)), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,0), 1)
     if show==False:
-        # cv.imshow( "Result", img)
+        # cv.imshow("Result", img)
         # cv.waitKey(show_time)
         # cv.destroyAllWindows()
         return img
@@ -224,3 +224,7 @@ if __name__ == '__main__':
         print("total number to show:",  numShowRects)
     # close image show window
     cv.destroyAllWindows()
+
+
+
+    

@@ -94,7 +94,7 @@ def fit_input(inputs):
     return inputs.ravel()
 
 class DarwinDev:
-    def __init__(self, IP, port, tick_time, class_num=8):
+    def __init__(self, IP, port, tick_time, class_num=8, no_init=False):
         address = (IP, port)
         self.trans = ts.Transmitter()
         self.trans.connect_lwip(address)
@@ -102,13 +102,13 @@ class DarwinDev:
         print("tcp connect succeed", IP)
         # self.trans.asic_reset()
         self.trans.set_tick_time(tick_time)
-        
-        self.trans.send_config("config/1_1config.txt")
-        print('configA send done', IP)
-        self.trans.send_config("config/1_2config.txt")
-        print('configB send done', IP)
-        self.trans.send_config("config/1_3config.txt")
-        print('configC send done', IP)
+        if not no_init:
+            self.trans.send_config("config/1_1config.txt")
+            print('configA send done', IP)
+            self.trans.send_config("config/1_2config.txt")
+            print('configB send done', IP)
+            self.trans.send_config("config/1_3config.txt")
+            print('configC send done', IP)
         self.class_num = class_num
         
     def get_result(self):

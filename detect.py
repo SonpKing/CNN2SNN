@@ -36,17 +36,11 @@ def main():
 if __name__ == "__main__":
     # main()
     # exit(0)
-    # server_run("localhost", 10080)
-    # client_run("localhost", 10080)
-    # p1=Process(target=server_run, args=("localhost", 10080,)) #必须加,号 cxcxcx
-    # p2=Process(target=client_run, args=("localhost", 10080,))
-    # p1.start()
-    # p2.start()
-    # p1.join()
-    # p2.join()
 
 
 
+    #TODO same boundingbox generation method of the deploy
+    #TODO
     # generate_img("C:\\Users\\dell\\Desktop\\videos\\video4.mov", "C:\\Users\\dell\\Pictures\\Camera Roll", 77, seed="new3")
 # # cam = Camera()
 # # # cam.display_video()

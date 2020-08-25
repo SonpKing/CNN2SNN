@@ -4,6 +4,7 @@ from .comm import ServerListener
 from multiprocessing import Manager, Pool, Process
 
 def data2bytearray(data, dtype):
+    data = np.array(data)
     shape = bytearray(np.array(data.shape, dtype=np.int32))
     shape = list2bytearray([len(shape)]) + shape
     data = bytearray(np.array(data, dtype=dtype))
@@ -52,13 +53,15 @@ def bytearray2list(bytes_data):
 def package_to_bytearray(package_input):
     assert package_input[1].dtype == np.float64
     return data2bytearray(package_input[0], np.int32) +\
-        data2bytearray(package_input[1], np.float32)
+        data2bytearray(package_input[1], np.float32) +\
+        data2bytearray(package_input[2], np.int32)
 
 def bytearray_to_package(bytes_data):
     helper = BytearrayToDataHelper()
     inds = helper.get_next(bytes_data, np.int32)
     imgs = helper.get_next(bytes_data, np.float32)
-    return inds, imgs
+    img_ids = helper.get_next(bytes_data, np.int32)
+    return inds, imgs, img_ids
 
 # def class_out_to_bytearray(inds, class_out):
 #     return data2bytearray(inds, np.int32) +\
