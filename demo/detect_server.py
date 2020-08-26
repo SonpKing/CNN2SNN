@@ -28,6 +28,15 @@ def start_service(conns, thread_num, input_que, res_que, plt_que, ctl_que, seed_
     timer = Timer()
     robot = Robot()
     img_id = 1
+    class_name = ['broker', 'diba', 'floor', 'water', 'person', 'robot', 'house']
+    class_color = [(85, 115, 139),
+                    (34, 139, 34),
+                    (201, 201, 201),
+                    (255, 144, 30),
+                    (48, 48, 255),
+                    (205, 50, 154),
+                    (0, 102, 205)]
+    # class_color = [(np.random.randint(255),np.random.randint(255),np.random.randint(255)) for _ in range(len(class_name))]
     while True:
         timer.record("starting loop", img_id)
         package_inputs, boxes, img = generate_input(seed_que, input_que, thread_num, img_id)
@@ -39,7 +48,7 @@ def start_service(conns, thread_num, input_que, res_que, plt_que, ctl_que, seed_
         timer.record("distribute", len(boxes), "to inferencer over", img_id)
         res = collect_output(conns, recv_pool, res_que, len(boxes), img_id)
         timer.record("collect output over", img_id)
-        is_water, is_house, is_broker, is_person = process_output(img, res, boxes, plt_que)
+        is_water, is_house, is_broker, is_person = process_output(img, res, boxes, plt_que, class_name, class_color)
         timer.record("process output over", img_id)
         # robot.control(is_water, is_house, is_broker, is_person)
         if not ctl_que.empty():
@@ -99,6 +108,7 @@ def searcher_input(img_que, input_que, tmp_que):
 def send_real_time_image(tmp_que, plt_que, seed_que):
     cur_seed = -1
     last_img = None
+    # last_time = time.time()
     while True:
         while seed_que.empty():
             sleep(SLEEP_TIME)
@@ -106,12 +116,15 @@ def send_real_time_image(tmp_que, plt_que, seed_que):
         if last_img is not None:
             plt_que.put(last_img)
             last_img = None
+        # cur_time = time.time()
+        # dt_time = (cur_time - last_time)/tmp_que.qsize()
+        # last_time = cur_time
         while not tmp_que.empty():
             seed, img = tmp_que.get()
             if seed <= cur_seed:
                 plt_que.put(img)
                 print("put one img")
-                sleep(0.22)
+                sleep(0.15)
             else:
                 last_img = img
                 break
@@ -163,12 +176,12 @@ def collect_output(conns, recv_pool, res_que, total_num, img_id):
                 # print("currently", len(res), "result collected")
         else:
             sleep(SLEEP_TIME)
-            if(time.time() - last_time > 1.27):
+            if(time.time() - last_time > 2):
                 break
     # print(res)
     return res
 
-def process_output(img, res, boxes, plt_que):
+def process_output(img, res, boxes, plt_que, class_name, class_color):
     is_water = is_broker = is_house = is_person = False
     if res is None or len(res) == 0:
         print("ignore this frame")
@@ -180,13 +193,14 @@ def process_output(img, res, boxes, plt_que):
                 new_boxes.append(boxes[i])
                 cls_pred.append(res[i])
         print("receive totally", len(new_boxes), "results")
-        boxes, cls_inds, scores = generate_boxes(boxes, cls_pred, cls_thresh=0.65, nms_thresh=0.4, scores_rm=[2])
+        boxes, cls_inds, scores = generate_boxes(boxes, cls_pred, cls_thresh=0.3, nms_thresh=0.3, scores_rm=[2])
         # boxes, cls_inds, scores = generate_boxes(boxes, cls_pred, cls_thresh=0.01, nms_thresh=0.9, scores_rm=[2])
         # print(boxes)
         print(cls_inds)
         print(scores)
-        class_name = ['broker', 'diba', 'floor', 'water', 'person', 'house']
-        fig = vis_bb(img, boxes, scores, cls_inds, class_name)#, show_time=5000, show=True
+        
+        
+        fig = vis_bb(img, boxes, scores, cls_inds, class_name, class_color)#, show_time=5000, show=True
         plt_que.put(fig)
         # plt_que.put(fig)
         # plt_que.put(fig)
@@ -232,7 +246,9 @@ class AbsConnection:
 
 def inference_async(pretrained_path, vth, in_que, res_que):
     print("start inference instance")
-    model = mobilenet_slim_spike(14,_if=False, vth=70.0)
+    # vth = pretrained_path.split("\\")[-1].split(".")[0][-2:]
+    # print("vth", vth)
+    model = mobilenet_slim_spike(14,_if=False, vth=vth)
     load_pretrained(model, pretrained_path, [], device=torch.device("cpu"))
     # print("ok")
     # model = SpikeNet(model, vth=vth)
@@ -252,7 +268,7 @@ def inference_async(pretrained_path, vth, in_que, res_que):
             result = np.array(eval_single(inputs, model, 1))
             print("infer over", inds)
             sleep(1)
-            res_que.put((inds, result[:, 8:], img_ids))
+            res_que.put((inds, result[:, 7:], img_ids))
 
 class FalseConnection(AbsConnection):
     def __init__(self, in_que, res_que, helper, pretrained_path, vth):
@@ -296,12 +312,12 @@ class DarwinConnection(AbsConnection):
     
 
 def server_run(IP, Port):
-    IPs = [2, 3, 6, 7, 11, 12, 13, 14, 15, 16, 17, 18, 19, 21]#, 20, 8
+    IPs = [2, 3, 6, 7, 11, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 23, 24, 25, 26, 27, 28, 29]#, 20, 8
     thread_num = len(IPs)
     inference_pool = PoolHelper(thread_num)
     conns = []
-    pretrained_path = "checkpoint\\0\\slim_nice_normalise_70.pth.tar"
-    vth = 70
+    pretrained_path = "checkpoint\\0\\slim_nice7_2_normalise_scale60.pth.tar"
+    vth = 60
     manager = Manager()
     class_num = 14
 

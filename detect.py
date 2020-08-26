@@ -41,68 +41,68 @@ if __name__ == "__main__":
 
     #TODO same boundingbox generation method of the deploy
     #TODO
-    # generate_img("C:\\Users\\dell\\Desktop\\videos\\video4.mov", "C:\\Users\\dell\\Pictures\\Camera Roll", 77, seed="new3")
+    generate_img("C:\\Users\\dell\\Desktop\\videos\\video10.mp4", "C:\\Users\\dell\\Pictures\\video10", 57, seed="new9")
 # # cam = Camera()
 # # # cam.display_video()
 # # img = cam.get_frame()
 # # img = cam.get_frame()
 # # img = cam.get_frame()
 
-    from demo.detect_client import TmpCam
-    cam = TmpCam("C:\\Users\\dell\\Desktop\\Detect_Data\\mytest")
-    model = mobilenet_slim_spike(14,_if=False, vth=70.0)
-    pretrain = "checkpoint\\0\\slim_cls14_limitcrop_normalise_70.pth.tar"
-    load_pretrained(model, pretrain, [], device=torch.device("cpu"))
-    # model = SpikeNet(model, vth=50.0)
-    ticks = 1
-    print("load the model done")
+    # from demo.detect_client import TmpCam
+    # cam = TmpCam("C:\\Users\\dell\\Desktop\\Detect_Data\\mytest")
+    # model = mobilenet_slim_spike(14,_if=False, vth=70.0)
+    # pretrain = "checkpoint\\0\\slim_cls14_limitcrop_normalise_70.pth.tar"
+    # load_pretrained(model, pretrain, [], device=torch.device("cpu"))
+    # # model = SpikeNet(model, vth=50.0)
+    # ticks = 1
+    # print("load the model done")
 
-    while True:
-        img = cam.get_frame()
-        #using mean and std to filter background
-        # mean, std = cv.meanStdDev(img)
-        # print(mean, std)
-        img = Resize(img, 400)
-        searcher = SelectiveSearch(quality=False)
-        rects = searcher.select(img)                                              
+    # while True:
+    #     img = cam.get_frame()
+    #     #using mean and std to filter background
+    #     # mean, std = cv.meanStdDev(img)
+    #     # print(mean, std)
+    #     img = Resize(img, 400)
+    #     searcher = SelectiveSearch(quality=False)
+    #     rects = searcher.select(img)                                              
 
-        print("bound boxes generation done")
-        boxes = filter_rects(img, rects, size=60)
-        show_bb(img, boxes)
-        cv.destroyAllWindows()
-        inputs = []
-        for box in boxes:
-            img_bb = generate_bb(img, box)
-            # cv.imshow( "Output", img_bb)
-            # cv.waitKey(1000)
-            # mean, std = cv.meanStdDev(img_bb)
-            # print(mean, std)
-            # cv.waitKey(1000)
-            inputs.append(img_bb.transpose((2, 0, 1)))
-        inputs = torch.tensor(inputs).float()
-        cls_pred = eval_single(inputs, model, ticks)
-        cls_pred = [item[8:] for item in cls_pred.numpy()]
-        print(cls_pred)
+    #     print("bound boxes generation done")
+    #     boxes = filter_rects(img, rects, size=60)
+    #     show_bb(img, boxes)
+    #     cv.destroyAllWindows()
+    #     inputs = []
+    #     for box in boxes:
+    #         img_bb = generate_bb(img, box)
+    #         # cv.imshow( "Output", img_bb)
+    #         # cv.waitKey(1000)
+    #         # mean, std = cv.meanStdDev(img_bb)
+    #         # print(mean, std)
+    #         # cv.waitKey(1000)
+    #         inputs.append(img_bb.transpose((2, 0, 1)))
+    #     inputs = torch.tensor(inputs).float()
+    #     cls_pred = eval_single(inputs, model, ticks)
+    #     cls_pred = [item[8:] for item in cls_pred.numpy()]
+    #     print(cls_pred)
 
-        # with open("img1.tmp", "wb") as f:
-        #     pickle.dump(img, f)
-        # with open("boxes1.tmp", "wb") as f:
-        #     pickle.dump(boxes, f)
-        # with open("cls_pred1.tmp", "wb") as f:
-        #     pickle.dump(cls_pred, f)
+    #     # with open("img1.tmp", "wb") as f:
+    #     #     pickle.dump(img, f)
+    #     # with open("boxes1.tmp", "wb") as f:
+    #     #     pickle.dump(boxes, f)
+    #     # with open("cls_pred1.tmp", "wb") as f:
+    #     #     pickle.dump(cls_pred, f)
 
-        # with open("img.tmp", "rb") as f:
-        #     img = pickle.load(f)
-        # with open("boxes.tmp", "rb") as f:
-        #     boxes = pickle.load(f)
-        # with open("cls_pred.tmp", "rb") as f:
-        #     cls_pred = pickle.load(f)
-        # scores_rm = [0, 1, 2, 3, 4, 5, 6, 7]
-        boxes, cls_inds, scores = generate_boxes(boxes, cls_pred, cls_thresh=0.1, nms_thresh=0.3, scores_rm=[2])
-        print(boxes)
-        print(cls_inds)
-        print(scores)
-        # class_name = ['Aeroplane', 'Apple', 'Banana', 'Car', 'Horse', 'Keyboard', 'Mug', 'Poodle', 'broker', 'diba', 'floor', 'house', 'person', 'water']
-        class_name = ['broker', 'diba', 'floor', 'water', 'person', 'house']
-        vis_bb(img, boxes, scores, cls_inds, class_name, show_time=5000, show=True)
+    #     # with open("img.tmp", "rb") as f:
+    #     #     img = pickle.load(f)
+    #     # with open("boxes.tmp", "rb") as f:
+    #     #     boxes = pickle.load(f)
+    #     # with open("cls_pred.tmp", "rb") as f:
+    #     #     cls_pred = pickle.load(f)
+    #     # scores_rm = [0, 1, 2, 3, 4, 5, 6, 7]
+    #     boxes, cls_inds, scores = generate_boxes(boxes, cls_pred, cls_thresh=0.1, nms_thresh=0.3, scores_rm=[2])
+    #     print(boxes)
+    #     print(cls_inds)
+    #     print(scores)
+    #     # class_name = ['Aeroplane', 'Apple', 'Banana', 'Car', 'Horse', 'Keyboard', 'Mug', 'Poodle', 'broker', 'diba', 'floor', 'house', 'person', 'water']
+    #     class_name = ['broker', 'diba', 'floor', 'water', 'person', 'house']
+    #     vis_bb(img, boxes, scores, cls_inds, class_name, show_time=5000, show=True)
 

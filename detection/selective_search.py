@@ -129,9 +129,9 @@ def show_bb(img, boxes, numShowRects=10000, show_time=5000):
     cv.waitKey(show_time)
     
 
-def vis_bb(img, bbox_pred, scores, cls_inds, class_name, show_time=0, show=False):
+def vis_bb(img, bbox_pred, scores, cls_inds, class_name, class_color, show_time=0, show=False):
+    print(class_name)
     img = img.copy()
-    class_color = [(np.random.randint(255),np.random.randint(255),np.random.randint(255)) for _ in range(len(class_name))]
     for i, box in enumerate(bbox_pred):
         cls_indx = cls_inds[i]
         xmin, ymin, xmax, ymax = box
