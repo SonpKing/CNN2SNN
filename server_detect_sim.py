@@ -18,5 +18,5 @@ from multiprocessing import Process
 
 
 if __name__ == "__main__":
-    server_run("localhost", 10080)
-    # server_run("192.168.1.202", 10080)
+    # server_run("localhost", 10080)
+    server_run("192.168.1.202", 10080)

@@ -22,6 +22,8 @@ from .robot import Robot
 import time
     
 SLEEP_TIME = 0.01
+RECV_TIME = 0.1
+REVIEW_TIME = 0.1
 
 def start_service(conns, thread_num, input_que, res_que, plt_que, ctl_que, seed_que):
     recv_pool = PoolHelper(thread_num)
@@ -50,7 +52,7 @@ def start_service(conns, thread_num, input_que, res_que, plt_que, ctl_que, seed_
         timer.record("collect output over", img_id)
         is_water, is_house, is_broker, is_person = process_output(img, res, boxes, plt_que, class_name, class_color)
         timer.record("process output over", img_id)
-        # robot.control(is_water, is_house, is_broker, is_person)
+        robot.control(is_water=is_water, is_house=False, is_broker = False, is_person=is_person)
         if not ctl_que.empty():
             # recv_pool.close()
             break
@@ -75,7 +77,7 @@ def recv_img_async(IP, Port, input_que, plt_que, seed_que):
                     img = bytearray2img(data)
                     img_que.put(img)
                     conn.send(application_id, bytearray(1))
-                    sleep(0.25)
+                    sleep(RECV_TIME)
                 except Exception as e:
                     print('An exception is raised when processing the client request', e)
                     raise(e)
@@ -83,7 +85,7 @@ def recv_img_async(IP, Port, input_que, plt_que, seed_que):
 
 def searcher_input(img_que, input_que, tmp_que):
     print("start searcher thread")
-    searcher = SelectiveSearch(quality=0)
+    searcher = SelectiveSearch(quality=-1)
     qlen = img_que.qsize()
     private_que = queue.Queue()
     for _ in range(qlen - 1):
@@ -124,7 +126,7 @@ def send_real_time_image(tmp_que, plt_que, seed_que):
             if seed <= cur_seed:
                 plt_que.put(img)
                 print("put one img")
-                sleep(0.15)
+                sleep(REVIEW_TIME)
             else:
                 last_img = img
                 break
@@ -176,7 +178,7 @@ def collect_output(conns, recv_pool, res_que, total_num, img_id):
                 # print("currently", len(res), "result collected")
         else:
             sleep(SLEEP_TIME)
-            if(time.time() - last_time > 2):
+            if(time.time() - last_time > 1.5):
                 break
     # print(res)
     return res
@@ -193,7 +195,7 @@ def process_output(img, res, boxes, plt_que, class_name, class_color):
                 new_boxes.append(boxes[i])
                 cls_pred.append(res[i])
         print("receive totally", len(new_boxes), "results")
-        boxes, cls_inds, scores = generate_boxes(boxes, cls_pred, cls_thresh=0.3, nms_thresh=0.3, scores_rm=[2])
+        boxes, cls_inds, scores = generate_boxes(boxes, cls_pred, cls_thresh=0.3, nms_thresh=0.5, scores_rm=[])
         # boxes, cls_inds, scores = generate_boxes(boxes, cls_pred, cls_thresh=0.01, nms_thresh=0.9, scores_rm=[2])
         # print(boxes)
         print(cls_inds)
@@ -202,16 +204,16 @@ def process_output(img, res, boxes, plt_que, class_name, class_color):
         
         fig = vis_bb(img, boxes, scores, cls_inds, class_name, class_color)#, show_time=5000, show=True
         plt_que.put(fig)
-        # plt_que.put(fig)
-        # plt_que.put(fig)
+        plt_que.put(fig)
+        plt_que.put(fig)
         print("put cls img")
         for cls_ind in cls_inds:
             if cls_ind == 6:
-                is_water = True
+                is_house = True
             if cls_ind == 4:
                 is_person = True
             if cls_ind == 3:
-                is_house = True
+                is_water = True
             if cls_ind == 0:
                 is_broker = True
     return is_water, is_house, is_broker, is_person
@@ -267,7 +269,7 @@ def inference_async(pretrained_path, vth, in_que, res_que):
             # print("start infering")
             result = np.array(eval_single(inputs, model, 1))
             print("infer over", inds)
-            sleep(1)
+            # sleep(1)
             res_que.put((inds, result[:, 7:], img_ids))
 
 class FalseConnection(AbsConnection):
@@ -299,7 +301,7 @@ def inference_dev(IP, Port, class_num, in_que, res_que):
                 result = dev.get_result()
                 result = np.array(result).reshape((3,-1))
                 print("infer over", inds, IP)
-                res_que.put((inds, result[:, 8:], img_ids))
+                res_que.put((inds, result[:, 7:], img_ids))
             except:
                 print("infer error")
                 
@@ -312,8 +314,8 @@ class DarwinConnection(AbsConnection):
     
 
 def server_run(IP, Port):
-    IPs = [2, 3, 6, 7, 11, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 23, 24, 25, 26, 27, 28, 29]#, 20, 8
-    thread_num = len(IPs)
+    # IPs = [3, 6, 7, 11, 13, 14, 15, 16, 17, 18, 19, 21]#, 20, 8, 22, 23, 24, 25, 26, 27, 28, 2
+    thread_num = 20 #len(IPs)
     inference_pool = PoolHelper(thread_num)
     conns = []
     pretrained_path = "checkpoint\\0\\slim_nice7_2_normalise_scale60.pth.tar"

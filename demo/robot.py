@@ -41,13 +41,13 @@ class Robot:
 
     def get_medical(self):
         Get(self.robot_IP, self.robot_Port, 100, bytearray(2))
-        Get(self.robot_IP, self.robot_Port, 104, bytearray(2))
+        # Get(self.robot_IP, self.robot_Port, 104, bytearray(2))
         print("!!!!!!!!!!!!!!!send person")
         self.last_robot_cmd = 0
 
     def get_repair(self, cur_time):
         Get(self.robot_IP, self.robot_Port, 102, bytearray(2))
-        Get(self.robot_IP, self.robot_Port, 103, bytearray(2))
+        # Get(self.robot_IP, self.robot_Port, 103, bytearray(2))
         Get(self.robot_IP, self.robot_Port, 104, bytearray(2))
         print("!!!!!!!!!!!!!!!send broker")
         self.last_robot_cmd = 1

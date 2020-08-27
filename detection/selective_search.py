@@ -103,7 +103,7 @@ def rect2box(rect):
 
 def bb_isvalid(img, rect, ratio=4.0):
     _, _, w, h = rect
-    return 1.0 / ratio < w / h < ratio and w > 20 and h > 20
+    return 1.0 / ratio < w / h < ratio and w > 50 and h > 50
 
 def generate_bb(img, box, resize=32):
     x1, y1, x2, y2 = box
