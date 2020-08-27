@@ -22,8 +22,9 @@ from .robot import Robot
 import time
     
 SLEEP_TIME = 0.01
-RECV_TIME = 0.1
-REVIEW_TIME = 0.1
+RECV_TIME = 0.25
+REVIEW_TIME = 0.15
+WAIT_TIME = 2
 
 def start_service(conns, thread_num, input_que, res_que, plt_que, ctl_que, seed_que):
     recv_pool = PoolHelper(thread_num)
@@ -39,6 +40,8 @@ def start_service(conns, thread_num, input_que, res_que, plt_que, ctl_que, seed_
                     (205, 50, 154),
                     (0, 102, 205)]
     # class_color = [(np.random.randint(255),np.random.randint(255),np.random.randint(255)) for _ in range(len(class_name))]
+    has_water = False
+    scores_rm = [4]
     while True:
         timer.record("starting loop", img_id)
         package_inputs, boxes, img = generate_input(seed_que, input_que, thread_num, img_id)
@@ -50,7 +53,12 @@ def start_service(conns, thread_num, input_que, res_que, plt_que, ctl_que, seed_
         timer.record("distribute", len(boxes), "to inferencer over", img_id)
         res = collect_output(conns, recv_pool, res_que, len(boxes), img_id)
         timer.record("collect output over", img_id)
-        is_water, is_house, is_broker, is_person = process_output(img, res, boxes, plt_que, class_name, class_color)
+        is_water, is_house, is_broker, is_person = process_output(img, res, boxes, plt_que, class_name, class_color, scores_rm = scores_rm)
+        if has_water:
+            scores_rm = [3]
+        else:
+            has_water = is_water
+            scores_rm = [4]
         timer.record("process output over", img_id)
         robot.control(is_water=is_water, is_house=False, is_broker = False, is_person=is_person)
         if not ctl_que.empty():
@@ -178,12 +186,12 @@ def collect_output(conns, recv_pool, res_que, total_num, img_id):
                 # print("currently", len(res), "result collected")
         else:
             sleep(SLEEP_TIME)
-            if(time.time() - last_time > 1.5):
+            if(time.time() - last_time > WAIT_TIME):
                 break
     # print(res)
     return res
 
-def process_output(img, res, boxes, plt_que, class_name, class_color):
+def process_output(img, res, boxes, plt_que, class_name, class_color, scores_rm=[]):
     is_water = is_broker = is_house = is_person = False
     if res is None or len(res) == 0:
         print("ignore this frame")
@@ -195,7 +203,7 @@ def process_output(img, res, boxes, plt_que, class_name, class_color):
                 new_boxes.append(boxes[i])
                 cls_pred.append(res[i])
         print("receive totally", len(new_boxes), "results")
-        boxes, cls_inds, scores = generate_boxes(boxes, cls_pred, cls_thresh=0.3, nms_thresh=0.5, scores_rm=[])
+        boxes, cls_inds, scores = generate_boxes(boxes, cls_pred, cls_thresh=0.3, nms_thresh=0.5, scores_rm=scores_rm)
         # boxes, cls_inds, scores = generate_boxes(boxes, cls_pred, cls_thresh=0.01, nms_thresh=0.9, scores_rm=[2])
         # print(boxes)
         print(cls_inds)
@@ -314,8 +322,8 @@ class DarwinConnection(AbsConnection):
     
 
 def server_run(IP, Port):
-    # IPs = [3, 6, 7, 11, 13, 14, 15, 16, 17, 18, 19, 21]#, 20, 8, 22, 23, 24, 25, 26, 27, 28, 2
-    thread_num = 20 #len(IPs)
+    IPs = [41, 42, 43, 44, 45, 46, 47,  49, 50, 51, 54, 55, 56, 57, 58, 59, 60]#[3, 6, 7, 11, 13, 14, 15, 16, 17, 18, 19, 21]#, 20, 8, 22, 23, 24, 25, 26, 27, 28, 2, 5348,52,
+    thread_num = len(IPs) #20 #
     inference_pool = PoolHelper(thread_num)
     conns = []
     pretrained_path = "checkpoint\\0\\slim_nice7_2_normalise_scale60.pth.tar"
@@ -326,8 +334,8 @@ def server_run(IP, Port):
     res_que = manager.Queue()
 
     for i in range(thread_num):
-        conns.append(FalseConnection(manager.Queue(), res_que, inference_pool, pretrained_path, vth))
-        # conns.append(DarwinConnection("192.168.1."+str(IPs[i]), 7, class_num, manager.Queue(), manager.Queue(), inference_pool))
+        # conns.append(FalseConnection(manager.Queue(), res_que, inference_pool, pretrained_path, vth))
+        conns.append(DarwinConnection("192.168.1."+str(IPs[i]), 7, class_num, manager.Queue(), res_que, inference_pool))
     
     plt_que = manager.Queue()
 

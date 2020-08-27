@@ -24,9 +24,9 @@ import cv2 as cv
 
 
 def show_async(plt_que, ctl_que):
-    window_name = 'Object Recognization'
-    cv.namedWindow(window_name, cv.WND_PROP_FULLSCREEN)
-    cv.setWindowProperty(window_name, cv.WND_PROP_FULLSCREEN, cv.WINDOW_FULLSCREEN)
+    window_name = 'Object Detection'
+    cv.namedWindow(window_name, cv.WND_PROP_FULLSCREEN)#cv.WND_PROP_AUTOSIZE
+    cv.setWindowProperty(window_name, cv.WND_PROP_FULLSCREEN, cv.WINDOW_NORMAL)#cv.WINDOW_AUTOSIZE,  cv.WINDOW_FULLSCREEN
     print("opencv showing started")
     img = cv.imread("data\\demo.png")
     while plt_que.empty():

@@ -103,8 +103,9 @@ class DarwinDev:
         # self.trans.asic_reset()
         self.trans.set_tick_time(tick_time)
         if not no_init:
+            s_time = time.time()
             self.trans.send_config("config/1_1config.txt")
-            print('configA send done', IP)
+            print('configA send done', IP , time.time() - s_time)
             self.trans.send_config("config/1_2config.txt")
             print('configB send done', IP)
             self.trans.send_config("config/1_3config.txt")

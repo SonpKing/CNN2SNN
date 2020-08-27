@@ -10,11 +10,11 @@ from hardware.insert_zeros import insert_zeros
 
 def sim():
     batch_size = 3
-    _, val_loader = data_loader("data\Detect_Data", batch_size=3, img_size=32, workers=1, dataset="imagenet") 
+    _, val_loader = data_loader("C:\\Users\\zjlab\\Desktop\\Detect_Data_anno\\Detect_Data", batch_size=3, img_size=32, workers=1, dataset="imagenet") 
     ticks = 200
     total_acc  = 0
     class_num = 14
-    sim = DarwinDev("192.168.3.10", 7, 220000, class_num)
+    sim = DarwinDev("192.168.1.3", 7, 220000, class_num)
     
     # for _ in range(1):
     # for idx in range(10):
