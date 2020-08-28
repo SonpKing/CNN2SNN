@@ -57,12 +57,21 @@ def nms(boxes, scores, nms_thresh=0.5):
     return keep
 
 
-def generate_boxes(rects, cls_pred, cls_thresh=0.5, nms_thresh=0.5, scores_rm=[]):
+def generate_boxes(rects, cls_pred, cls_thresh=0.5, nms_thresh=0.5, scores_rm=[], anno=True):
+    if anno:
+        cls_pred = np.array(cls_pred)
+        conf_pred = cls_pred[:, -1]
+        cls_pred = cls_pred[:, :-1]
+    # print("!!!!conf_pred", conf_pred)
     scores, cls_inds = cls_score(cls_pred, rects)
     for ind in scores_rm:
         scores[cls_inds==ind] = 0
     print(scores)
-    mask = np.where(scores >= cls_thresh)
+    if anno:
+        scores = scores * conf_pred
+        mask = np.where((scores >= cls_thresh)& (conf_pred > 0.5) )#
+    else:
+        mask = np.where(scores >= cls_thresh)
     scores = scores[mask]
     cls_inds = cls_inds[mask]
     boxes = rects[mask]

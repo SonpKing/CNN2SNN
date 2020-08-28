@@ -12,8 +12,8 @@ import os
 ##TODO while first or connectiong firsts
 def client_run(IP, Port):
     # cam = TmpCam("C:\\Users\\dell\\Desktop\\Detect_Data\\mytest")#Camera()
-    # cam = VideoCam("C:\\Users\\dell\\Desktop\\videos\\video10.mp4")#Camera()\\mytest")#Camera()
-    cam = VideoCam("C:\\Users\\zjlab\\Desktop\\video\\video10.mp4")
+    cam = VideoCam("C:\\Users\\dell\\Desktop\\videos\\video10.mp4")#Camera()\\mytest")#Camera()
+    # cam = VideoCam("C:\\Users\\zjlab\\Desktop\\video\\video10.mp4")
     # cam = TmpCam("C:\\Users\\zjlab\\Desktop\\Detect_Data\\mytest")#Camera()
     application_id = 7
     buffer_num = 0
