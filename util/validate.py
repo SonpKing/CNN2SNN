@@ -8,7 +8,7 @@ from torch.autograd import Variable
 import pickle
 
 
-def validate(val_loader, model, sim_iter=None, show=True):
+def validate(val_loader, model, sim_iter=None, show=True, annoed=False):
     criterion = torch.nn.CrossEntropyLoss().cuda()
     batch_time = AverageMeter()
     losses = AverageMeter()
@@ -51,6 +51,8 @@ def validate(val_loader, model, sim_iter=None, show=True):
 
             # print(target_var)
             # input()
+            if annoed:
+                output = output[:, :-1]
             loss = criterion(output, target_var)
 
             #measure

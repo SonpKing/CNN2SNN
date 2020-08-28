@@ -223,9 +223,9 @@ if __name__ == "__main__":
     # print(nest.GetKernelStatus())
     from util import data_loader
     _, val_loader = data_loader("/home/jinxb/Project/data/Darwin_data2", batch_size=1, img_size=32, workers=1, dataset="imagenet")
-    sim = Simulator(scale=90, reset_sub=False)
-    sim.create_net("connections/", "input", "net.fc")
-    tics = 100
+    sim = Simulator(scale=70, reset_sub=True)
+    sim.create_net("connections/", "input", "net.classifier")
+    tics = 200
     total_acc  = 0
     for it, (inputs, targets) in enumerate(val_loader):
         inputs = inputs.numpy()[0]

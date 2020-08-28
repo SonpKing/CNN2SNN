@@ -10,7 +10,8 @@ from tensorboardX import SummaryWriter
 import torch.nn.utils.prune as prune
 
 args = None
-def fit(args_, model, train_loader, val_loader, learning_rate, rm_layers=[], forzen_epoch=[], need_forzen=[], schedualer=None, teacher_model=None):#, teacher_device=None, , forzen_multi_gpu=0, prune_params=[], prune_epoch=[]
+def fit(args_, model, train_loader, val_loader, learning_rate, rm_layers=[], 
+forzen_epoch=[], need_forzen=[], schedualer=None, teacher_model=None, annoed=False, loss_weight=None):#, teacher_device=None, , forzen_multi_gpu=0, prune_params=[], prune_epoch=[]
     global args
     args = args_
     #model loading
@@ -31,11 +32,16 @@ def fit(args_, model, train_loader, val_loader, learning_rate, rm_layers=[], for
 
     
     #loss function and optimizer
-    criterion = nn.CrossEntropyLoss().cuda()
+    if loss_weight:
+        loss_weight=torch.tensor(loss_weight).float()
+    criterion = nn.CrossEntropyLoss(weight=loss_weight).cuda()
     if teacher_model:
         print("training with teacher network")
         teacher_model.eval()
         criterion2 = nn.KLDivLoss(reduction='batchmean').cuda()
+    elif annoed:
+        print("training with annotation")
+        criterion2 = MSELoss()
     else:
         criterion2 = None
         
@@ -120,10 +126,16 @@ def fit(args_, model, train_loader, val_loader, learning_rate, rm_layers=[], for
         print("learning rate:", learning_rate[epoch-1])
 
         #train one epoch
-        train(train_loader, model, criterion, optimizer, epoch, train_writer, teacher_model, criterion2) #, teacher_device
+        if annoed:
+            train_anno(train_loader, model, criterion, optimizer, epoch, train_writer, teacher_model, criterion2) #, teacher_device
+        else:
+            train(train_loader, model, criterion, optimizer, epoch, train_writer, teacher_model, criterion2) #, teacher_device
 
         #evaluate on validation set
-        prec1 = validate(val_loader, model, criterion, epoch, eval_writer)
+        if annoed:
+            prec1 = validate_anno(val_loader, model, criterion, epoch, eval_writer)
+        else:
+            prec1 = validate(val_loader, model, criterion, epoch, eval_writer)
 
         # remember best acc@1 and save checkpoint
         is_best = prec1 > best_acc1
@@ -200,7 +212,7 @@ def train(train_loader, model, criterion, optimizer, epoch, train_writer, teache
         train_writer.add_scalar("Accuracy/Top1_epoch", top1.avg, epoch)
         train_writer.add_scalar("ZAccuracy/Top5_epoch", top5.avg, epoch)
 
-    
+
 def validate(val_loader, model, criterion, epoch, eval_writer):
     # batch_time = AverageMeter()
     losses = AverageMeter()
@@ -220,6 +232,134 @@ def validate(val_loader, model, criterion, epoch, eval_writer):
             #compute
             output = model(input_var)
             loss = criterion(output, target_var)
+
+            #measure
+            prec = accuracy(output.detach(), target_var.data, top=(1, 5), class_acc = args.class_acc)
+            num_batch = target_var.size(0)
+            losses.update(loss.detach().item(), num_batch)
+            top1.update(prec[0].item(), num_batch)
+            top5.update(prec[1].item(), num_batch)
+
+            batch_time = time.time() - end
+            end = time.time()
+            if it % args.show_freq == 0:
+                print('Epoch:[{epoch}][{iter}/{nums_iters}]\t'
+                    'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
+                    'Prec@1 {top1.val:.3f} ({top1.avg:.3f})\t'
+                    'Prec@5 {top5.val:.3f} ({top5.avg:.3f})\t'
+                    'Time {batch_time:.3f}\t'#   'Data {data_time.val:.3f} ({data_time.avg:.3f})\t'
+                    '{local_time}'.format(
+                    epoch=epoch, iter=it, nums_iters=nums_iters, batch_time=batch_time, #data_time=data_time, 
+                    loss=losses, top1=top1, top5=top5, local_time = time.strftime("%H:%M:%S", time.localtime())))
+                # print(args.class_acc[:10])
+        print(' * Prec@1 {top1.avg:.3f}\tPrec@5 {top5.avg:.3f}'.format(top1=top1, top5=top5))
+    #add to tensorboard
+    if args.saveboard:
+        eval_writer.add_scalar("Loss/Loss_epoch", losses.avg, epoch)
+        eval_writer.add_scalar("Accuracy/Top1_epoch", top1.avg, epoch)
+        eval_writer.add_scalar("ZAccuracy/Top5_epoch", top5.avg, epoch)
+
+    
+
+    return top1.avg
+
+
+
+class MSELoss(nn.Module):
+    def __init__(self, reduction='mean'):
+        super(MSELoss, self).__init__()
+        self.reduction = reduction
+
+    def forward(self, inputs, targets):
+        pos_loss = (inputs - targets)**2
+        if self.reduction == 'mean':
+            pos_loss = torch.mean(pos_loss)
+        return pos_loss
+
+def train_anno(train_loader, model, criterion, optimizer, epoch, train_writer, teacher_model, criterion2):#, teacher_device
+    # batch_time = AverageMeter() # 
+    # data_time = AverageMeter()
+    losses = AverageMeter()
+    top1 = AverageMeter()
+    top5 = AverageMeter()
+
+    nums_iters = len(train_loader)
+    total_iters = nums_iters*(epoch-1)
+
+    model.train()
+    end = time.time()
+    alpha = 0.5
+    for it, (inputs, targets, confs) in enumerate(train_loader):
+        data_time = time.time()- end
+        #prepare data to gpu
+        input_var = torch.autograd.Variable(inputs).cuda(non_blocking=True)
+        target_var = torch.autograd.Variable(targets).cuda(non_blocking=True)
+        conf_var = torch.autograd.Variable(confs).cuda(non_blocking=True)
+
+        #start gpu compute
+        output = model(input_var)
+        conf_pred = output[:, -1]
+        cls_loss = torch.mean(criterion(output[:, :-1], target_var))
+        conf_loss = criterion2(conf_pred, conf_var)
+        loss = cls_loss * (1 - alpha) + conf_loss * alpha
+
+
+        #measure accuracy
+        prec = accuracy(output.detach(), target_var.data, top=(1, 5))
+        num_batch = target_var.shape[0]
+        losses.update(loss.detach().item(), num_batch)
+        top1.update(prec[0].item(), num_batch)
+        top5.update(prec[1].item(), num_batch)
+    
+        #compute gradient and backword
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+        batch_time = time.time() - end
+        end = time.time()
+        #print the loss and accuracy
+        if it % args.show_freq == 0:
+            print('Epoch:[{epoch}][{iter}/{nums_iters}]\t'
+                  'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
+                  'Prec@1 {top1.val:.3f} ({top1.avg:.3f})\t'
+                  'Prec@5 {top5.val:.3f} ({top5.avg:.3f})\t'
+                  'Time {batch_time:.3f} ({data_time:.3f})\t' 
+                  '{local_time}'.format(
+                   epoch=epoch, iter=it, nums_iters=nums_iters, batch_time=batch_time, data_time=data_time, 
+                   loss=losses, top1=top1, top5=top5, local_time = time.strftime("%H:%M:%S", time.localtime())))
+        #add to tensorboardX
+        if args.saveboard:
+            train_writer.add_scalar("Loss/Loss", losses.avg, total_iters+it)
+            train_writer.add_scalar("Accuracy/Top1", top1.avg, total_iters+it)
+            train_writer.add_scalar("ZAccuracy/Top5", top5.avg, total_iters+it)
+        
+    #add to tensorboard
+    if args.saveboard:
+        train_writer.add_scalar("Loss/Loss_epoch", losses.avg, epoch)
+        train_writer.add_scalar("Accuracy/Top1_epoch", top1.avg, epoch)
+        train_writer.add_scalar("ZAccuracy/Top5_epoch", top5.avg, epoch)
+
+  
+def validate_anno(val_loader, model, criterion, epoch, eval_writer):
+    # batch_time = AverageMeter()
+    losses = AverageMeter()
+    top1 = AverageMeter()
+    top5 = AverageMeter()
+    nums_iters = len(val_loader)
+
+    model.eval()
+
+
+    end = time.time()
+    with torch.no_grad():
+        for it, (inputs, targets) in enumerate(val_loader):
+            input_var = torch.autograd.Variable(inputs).cuda(non_blocking=True)
+            target_var = torch.autograd.Variable(targets).cuda(non_blocking=True)
+
+            #compute
+            output = model(input_var)
+            loss = criterion(output[:, :-1], target_var)
 
             #measure
             prec = accuracy(output.detach(), target_var.data, top=(1, 5), class_acc = args.class_acc)

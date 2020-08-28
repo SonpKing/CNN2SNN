@@ -9,6 +9,7 @@ __*
 *.tmp
 *.zip
 temp*
+tmp_*
 !__init__.py
 !.gitignore
 !README.md
