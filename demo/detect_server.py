@@ -41,6 +41,7 @@ def start_service(conns, thread_num, input_que, res_que, plt_que, ctl_que, seed_
                     (0, 102, 205)]
     # class_color = [(np.random.randint(255),np.random.randint(255),np.random.randint(255)) for _ in range(len(class_name))]
     has_water = False
+    # scores_rm = []
     scores_rm = [4]
     while True:
         timer.record("starting loop", img_id)
@@ -56,6 +57,7 @@ def start_service(conns, thread_num, input_que, res_que, plt_que, ctl_que, seed_
         is_water, is_house, is_broker, is_person = process_output(img, res, boxes, plt_que, class_name, class_color, scores_rm = scores_rm)
         if has_water:
             scores_rm = [3]
+            
         else:
             has_water = is_water
             scores_rm = [4]
@@ -322,7 +324,7 @@ class DarwinConnection(AbsConnection):
     
 
 def server_run(IP, Port):
-    IPs = [41, 42, 43, 44, 45, 46, 47,  49, 50, 51, 54, 55, 56, 57, 58, 59, 60]#[3, 6, 7, 11, 13, 14, 15, 16, 17, 18, 19, 21]#, 20, 8, 22, 23, 24, 25, 26, 27, 28, 2, 5348,52,
+    IPs = [41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60]#[3, 6, 7, 11, 13, 14, 15, 16, 17, 18, 19, 21]#, 20, 8, 22, 23, 24, 25, 26, 27, 28, 2, 5348,52,
     thread_num = len(IPs) #20 #
     inference_pool = PoolHelper(thread_num)
     conns = []
