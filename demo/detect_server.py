@@ -216,7 +216,7 @@ def process_output(img, res, boxes, plt_que, class_name, class_color, scores_rm=
                 new_boxes.append(boxes[i])
                 cls_pred.append(res[i])
         print("receive totally", len(new_boxes), "results")
-        boxes, cls_inds, scores = generate_boxes(boxes, cls_pred, cls_thresh=0.5, nms_thresh=0.5, scores_rm=scores_rm, anno=ANNO)
+        boxes, cls_inds, scores = generate_boxes(boxes, cls_pred, cls_thresh=0.3, nms_thresh=0.5, scores_rm=scores_rm, anno=ANNO)
         # boxes, cls_inds, scores = generate_boxes(boxes, cls_pred, cls_thresh=0.01, nms_thresh=0.9, scores_rm=[2])
         # print(boxes)
         print(cls_inds)
@@ -306,6 +306,7 @@ class FalseConnection(AbsConnection):
 def inference_dev(IP, Port, class_num, in_que, res_que):
     print("starting init dev")
     dev = DarwinDev(IP, Port, 220000, class_num, False) #####!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    spike_num = class_num * 3
     if ANNO:
         cut = 8
     else:
@@ -327,7 +328,7 @@ def inference_dev(IP, Port, class_num, in_que, res_que):
             print("start infering", inds, IP)
             dev.eliminate('all')
             try:
-                dev.run(inputlist, rowlist, 200)
+                dev.run(inputlist, rowlist, spike_num, 200)
                 result = dev.get_result()
                 result = np.array(result).reshape((3,-1))
                 print("infer over", inds, IP)
@@ -344,20 +345,23 @@ class DarwinConnection(AbsConnection):
     
 
 def server_run(IP, Port):
-    IPs = [41, 42, 43, 44, 45, 46, 47,  49, 50, 51, 54, 55, 56, 57, 58, 59, 60]#[3, 6, 7, 11, 13, 14, 15, 16, 17, 18, 19, 21]#, 20, 8, 22, 23, 24, 25, 26, 27, 28, 2, 5348,52,
+    IPs = [41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60]#[3, 6, 7, 11, 13, 14, 15, 16, 17, 18, 19, 21]#, 20, 8, 22, 23, 24, 25, 26, 27, 28, 2, 5348,52,
     thread_num = len(IPs) #20 #
     inference_pool = PoolHelper(thread_num)
     conns = []
     pretrained_path = "checkpoint\\0\\slim_anno_normalise_scale70.pth.tar"#"checkpoint\\0\\epoch_83_87.pth.tar" #"checkpoint\\0\\slim_nice7_2_normalise_scale60.pth.tar"
     vth = 70
     manager = Manager()
-    class_num = 14
+    if ANNO: 
+        class_num = 15
+    else:
+        class_num = 14
 
     res_que = manager.Queue()
 
     for i in range(thread_num):
-        conns.append(FalseConnection(manager.Queue(), res_que, inference_pool, pretrained_path, vth))
-        # conns.append(DarwinConnection("192.168.1."+str(IPs[i]), 7, class_num, manager.Queue(), res_que, inference_pool))
+        # conns.append(FalseConnection(manager.Queue(), res_que, inference_pool, pretrained_path, vth))
+        conns.append(DarwinConnection("192.168.1."+str(IPs[i]), 7, class_num, manager.Queue(), res_que, inference_pool))
     
     plt_que = manager.Queue()
 

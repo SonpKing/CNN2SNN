@@ -1,5 +1,6 @@
 import numpy as np
 # from .selective_search import show_bb
+max_conf = 0
 def softmax(X, axis=-1):
     dim_max = np.expand_dims(np.max(X, axis=axis), axis=axis)
     X -= dim_max
@@ -67,9 +68,13 @@ def generate_boxes(rects, cls_pred, cls_thresh=0.5, nms_thresh=0.5, scores_rm=[]
     for ind in scores_rm:
         scores[cls_inds==ind] = 0
     print(scores)
+    global max_conf
+    max_conf = max(np.max(conf_pred), max_conf)
+    print(conf_pred, "#########################max_conf:", max_conf)
+    conf_pred = conf_pred / 18.0
     if anno:
         scores = scores * conf_pred
-        mask = np.where((scores >= cls_thresh)& (conf_pred > 0.5) )#
+        mask = np.where((scores >= cls_thresh) & (conf_pred > 0.3))#
     else:
         mask = np.where(scores >= cls_thresh)
     scores = scores[mask]
