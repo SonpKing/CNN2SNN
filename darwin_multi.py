@@ -1,6 +1,6 @@
 from hardware import DarwinDev
 # from hardware.create_conf_nice5 import create_config
-from hardware.create_conf_anno7 import create_config
+from hardware.create_conf_anno_loss_weight_7 import create_config
 from hardware.darwain_hardware import read_image, read_connections, fit_input, generate_multi_input, edit_connections
 import numpy as np 
 from time import sleep
@@ -85,4 +85,4 @@ if __name__ == "__main__":
     # for d in data:
     #     print(d)
     # edit_connections("connections_anno_7\\net.global_pool_to_net.classifier_chip0", 14, 3)
-    # insert_zeros("connections_anno",40,'connections_anno_7')
+    # insert_zeros("connections_anno_loss_weight",40,'connections_anno_loss_weight_7')
