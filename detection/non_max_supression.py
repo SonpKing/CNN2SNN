@@ -63,20 +63,19 @@ def generate_boxes(rects, cls_pred, cls_thresh=0.5, nms_thresh=0.5, scores_rm=[]
         cls_pred = np.array(cls_pred)
         conf_pred = cls_pred[:, -1]
         cls_pred = cls_pred[:, :-1]
-    # print("!!!!conf_pred", conf_pred)
     scores, cls_inds = cls_score(cls_pred, rects)
     for ind in scores_rm:
         scores[cls_inds==ind] = 0
-    print(scores)
-    global max_conf
-    max_conf = max(np.max(conf_pred), max_conf)
-    print(conf_pred, "#########################max_conf:", max_conf)
-    conf_pred = conf_pred / 18.0
+    # global max_conf
+    # max_conf = max(np.max(conf_pred), max_conf)
+    # print(conf_pred, "#########################max_conf:", max_conf)
+    # conf_pred = conf_pred / 16.0
     if anno:
         scores = scores * conf_pred
-        mask = np.where((scores >= cls_thresh) & (conf_pred > 0.3))#
+        mask = np.where((scores >= cls_thresh) & (conf_pred > 0.5))#
     else:
         mask = np.where(scores >= cls_thresh)
+    print(scores)
     scores = scores[mask]
     cls_inds = cls_inds[mask]
     boxes = rects[mask]

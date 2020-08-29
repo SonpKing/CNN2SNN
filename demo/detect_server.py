@@ -93,8 +93,8 @@ def recv_img_async(IP, Port, input_que, plt_que, seed_que):
                     data = recv_until_ok(conn)
                     img = bytearray2img(data)
                     img_que.put(img)
-                    # while img_que.qsize() > 5:
-                    #     sleep(SLEEP_TIME)
+                    while img_que.qsize() > 10:
+                        sleep(SLEEP_TIME)
                     conn.send(application_id, bytearray(1))
                     sleep(RECV_TIME)
                 except Exception as e:
@@ -112,18 +112,19 @@ def searcher_input(img_que, input_que, tmp_que):
     seed = 0
     while True:
         if not img_que.empty():
+            while input_que.qsize() >= 1:
+                sleep(SLEEP_TIME)
             qlen = img_que.qsize()
             print("get input for searcher", qlen)
             for _ in range(qlen - 1):
-                private_que.put(img_que.get())
+                img_que.get()
+                # private_que.put(img_que.get())
             img = img_que.get()
-            private_que.put(img)
+            # private_que.put(img)
             rects = searcher.select(img)
-            # while input_que.qsize() > 1:
-            #     sleep(SLEEP_TIME)
             input_que.put((img, rects, seed))
-            while not private_que.empty():
-                tmp_que.put((seed, private_que.get()))
+            # while not private_que.empty():
+            #     tmp_que.put((seed, private_que.get()))
             seed = (seed + 1) % 1133579
         else:
             sleep(SLEEP_TIME)
@@ -216,7 +217,7 @@ def process_output(img, res, boxes, plt_que, class_name, class_color, scores_rm=
                 new_boxes.append(boxes[i])
                 cls_pred.append(res[i])
         print("receive totally", len(new_boxes), "results")
-        boxes, cls_inds, scores = generate_boxes(boxes, cls_pred, cls_thresh=0.3, nms_thresh=0.5, scores_rm=scores_rm, anno=ANNO)
+        boxes, cls_inds, scores = generate_boxes(boxes, cls_pred, cls_thresh=0.5, nms_thresh=0.5, scores_rm=scores_rm, anno=ANNO)
         # boxes, cls_inds, scores = generate_boxes(boxes, cls_pred, cls_thresh=0.01, nms_thresh=0.9, scores_rm=[2])
         # print(boxes)
         print(cls_inds)
@@ -224,8 +225,6 @@ def process_output(img, res, boxes, plt_que, class_name, class_color, scores_rm=
         
         
         fig = vis_bb(img, boxes, scores, cls_inds, class_name, class_color)#, show_time=5000, show=True
-        plt_que.put(fig)
-        plt_que.put(fig)
         plt_que.put(fig)
         print("put cls img")
         for cls_ind in cls_inds:
@@ -345,11 +344,12 @@ class DarwinConnection(AbsConnection):
     
 
 def server_run(IP, Port):
-    IPs = [41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60]#[3, 6, 7, 11, 13, 14, 15, 16, 17, 18, 19, 21]#, 20, 8, 22, 23, 24, 25, 26, 27, 28, 2, 5348,52,
+    IPs = [41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60]
+    # IPs = [3, 6, 7, 8, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21]
     thread_num = len(IPs) #20 #
     inference_pool = PoolHelper(thread_num)
     conns = []
-    pretrained_path = "checkpoint\\0\\slim_anno_normalise_scale70.pth.tar"#"checkpoint\\0\\epoch_83_87.pth.tar" #"checkpoint\\0\\slim_nice7_2_normalise_scale60.pth.tar"
+    pretrained_path = "checkpoint\\0\\epoch_81_20.pth.tar"#"checkpoint\\0\\epoch_83_87.pth.tar" #"checkpoint\\0\\slim_nice7_2_normalise_scale60.pth.tar"
     vth = 70
     manager = Manager()
     if ANNO: 
@@ -360,8 +360,8 @@ def server_run(IP, Port):
     res_que = manager.Queue()
 
     for i in range(thread_num):
-        # conns.append(FalseConnection(manager.Queue(), res_que, inference_pool, pretrained_path, vth))
-        conns.append(DarwinConnection("192.168.1."+str(IPs[i]), 7, class_num, manager.Queue(), res_que, inference_pool))
+        conns.append(FalseConnection(manager.Queue(), res_que, inference_pool, pretrained_path, vth))
+        # conns.append(DarwinConnection("192.168.1."+str(IPs[i]), 7, class_num, manager.Queue(), res_que, inference_pool))
     
     plt_que = manager.Queue()
 
