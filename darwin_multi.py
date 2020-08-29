@@ -16,7 +16,7 @@ def sim():
     ticks = 200
     total_acc  = 0
     class_num = 15
-    sim = DarwinDev("192.168.1.60", 7, 220000, class_num)
+    sim = DarwinDev("192.168.1.59", 7, 220000, class_num)
     
     # for _ in range(1):
     # for idx in range(10):
@@ -84,5 +84,5 @@ if __name__ == "__main__":
     # data = read_connections('connections_anno_7\\net.global_pool_to_net.classifier_chip0')[0:500]
     # for d in data:
     #     print(d)
-    # edit_connections("connections_anno_7\\net.global_pool_to_net.classifier_chip0", 14, 3)
+    # edit_connections("connections_anno_loss_weight_7\\net.global_pool_to_net.classifier_chip0", 14, 4)
     # insert_zeros("connections_anno_loss_weight",40,'connections_anno_loss_weight_7')

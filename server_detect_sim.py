@@ -13,13 +13,14 @@ import cv2 as cv
 
 
 from demo.detect_client import client_run
-from demo.detect_server import server_run
+from demo.detect_server import server_run, test_server_run
 from multiprocessing import Process
 
 
 if __name__ == "__main__":
     # server_run("localhost", 10080)
     server_run("192.168.1.202", 10080)
+    # test_server_run("192.168.1.202", 10080)
 
 
 '''

@@ -22,12 +22,13 @@ from .robot import Robot
 import time
     
 SLEEP_TIME = 0.01
-RECV_TIME = 0.25
+RECV_TIME = 0.03
 REVIEW_TIME = 0.15
 WAIT_TIME = 2
 BUG = False
 ANNO = True
 ROBOT = False
+SNN = True
 
 def start_service(conns, thread_num, input_que, res_que, plt_que, ctl_que, seed_que):
     recv_pool = PoolHelper(thread_num)
@@ -96,7 +97,7 @@ def recv_img_async(IP, Port, input_que, plt_que, seed_que):
                     while img_que.qsize() > 10:
                         sleep(SLEEP_TIME)
                     conn.send(application_id, bytearray(1))
-                    sleep(RECV_TIME)
+                    # sleep(RECV_TIME)
                 except Exception as e:
                     print('An exception is raised when processing the client request', e)
                     raise(e)
@@ -112,8 +113,8 @@ def searcher_input(img_que, input_que, tmp_que):
     seed = 0
     while True:
         if not img_que.empty():
-            while input_que.qsize() >= 1:
-                sleep(SLEEP_TIME)
+            # while input_que.qsize() >= 1:
+            #     sleep(SLEEP_TIME)
             qlen = img_que.qsize()
             print("get input for searcher", qlen)
             for _ in range(qlen - 1):
@@ -186,6 +187,7 @@ def distribute(conns, package_inputs, application_id=7):
 def collect_output(conns, recv_pool, res_que, total_num, img_id):
     last_time = time.time()
     res = dict()
+    return_ids = set()
     while len(res) < total_num:
         if not res_que.empty():
             while not res_que.empty():
@@ -197,11 +199,21 @@ def collect_output(conns, recv_pool, res_que, total_num, img_id):
                 for i in range(len(ind)):
                     if img_ids[i] == img_id:
                         res[ind[i]] = outs[i]
+                    if ind[i] % 3 == 0:
+                        return_ids.add(ind[i] // 3)
                 # print("currently", len(res), "result collected")
         else:
             sleep(SLEEP_TIME)
             if(time.time() - last_time > WAIT_TIME):
                 break
+    new_conn = []
+    for i in return_ids:
+        new_conn.append(conns[i])
+    for i in range(len(conns)):
+        if i not in return_ids:
+            new_conn.append(conns[i])
+    for i in range(len(conns)):
+        conns[i] = new_conn[i]
     # print(res)
     return res
 
@@ -217,14 +229,16 @@ def process_output(img, res, boxes, plt_que, class_name, class_color, scores_rm=
                 new_boxes.append(boxes[i])
                 cls_pred.append(res[i])
         print("receive totally", len(new_boxes), "results")
-        boxes, cls_inds, scores = generate_boxes(boxes, cls_pred, cls_thresh=0.5, nms_thresh=0.5, scores_rm=scores_rm, anno=ANNO)
-        # boxes, cls_inds, scores = generate_boxes(boxes, cls_pred, cls_thresh=0.01, nms_thresh=0.9, scores_rm=[2])
-        # print(boxes)
+        new_boxes = np.array(new_boxes)
+        if SNN:
+            boxes, cls_inds, scores, confs, max_spikes = generate_boxes(new_boxes, cls_pred, cls_thresh=0.5, nms_thresh=0.3, conf_thresh=0.7, scores_rm=scores_rm, anno=ANNO, snn=SNN)
+        else:
+            boxes, cls_inds, scores, confs, max_spikes = generate_boxes(new_boxes, cls_pred, cls_thresh=0.5, nms_thresh=0.3, conf_thresh=0.7, scores_rm=scores_rm, anno=ANNO, snn=SNN)
         print(cls_inds)
         print(scores)
         
         
-        fig = vis_bb(img, boxes, scores, cls_inds, class_name, class_color)#, show_time=5000, show=True
+        fig = vis_bb(img, boxes, scores, cls_inds, class_name, class_color, confs=confs, spikes=max_spikes)#, show_time=5000, show=True
         plt_que.put(fig)
         print("put cls img")
         for cls_ind in cls_inds:
@@ -325,8 +339,8 @@ def inference_dev(IP, Port, class_num, in_que, res_que):
             img2 = fit_input(imgs[2])
             inputlist, rowlist = generate_multi_input(img0, img1, img2)
             print("start infering", inds, IP)
-            dev.eliminate('all')
             try:
+                dev.eliminate('all')
                 dev.run(inputlist, rowlist, spike_num, 200)
                 result = dev.get_result()
                 result = np.array(result).reshape((3,-1))
@@ -360,8 +374,10 @@ def server_run(IP, Port):
     res_que = manager.Queue()
 
     for i in range(thread_num):
-        conns.append(FalseConnection(manager.Queue(), res_que, inference_pool, pretrained_path, vth))
-        # conns.append(DarwinConnection("192.168.1."+str(IPs[i]), 7, class_num, manager.Queue(), res_que, inference_pool))
+        if SNN:
+            conns.append(DarwinConnection("192.168.1."+str(IPs[i]), 7, class_num, manager.Queue(), res_que, inference_pool))
+        else:
+            conns.append(FalseConnection(manager.Queue(), res_que, inference_pool, pretrained_path, vth))
     
     plt_que = manager.Queue()
 
@@ -385,6 +401,36 @@ def server_run(IP, Port):
             sub_conn.close()
         ctl_que.put("close")
         exit(0)
+
+
+def test_recv_img_async(IP, Port, plt_que):
+    application_id = 7
+    with ServerListener(IP, Port, None, 5) as listener:
+        print("detection server listening")
+        with listener.accept() as conn:
+            print("detection server connected")
+            while True:
+                try:
+                    data = recv_until_ok(conn)
+                    img = bytearray2img(data)
+                    plt_que.put(img)
+                    conn.send(application_id, bytearray(1))
+                    sleep(RECV_TIME)
+                except Exception as e:
+                    print('An exception is raised when processing the client request', e)
+                    raise(e)
+
+def test_server_run(IP, Port):
+    manager = Manager()
+    plt_que = manager.Queue()
+    ctl_que = manager.Queue()
+    input_process = Process(target=test_recv_img_async, args=(IP, Port, plt_que, )) 
+    visual_process = Process(target=show_async, args=(plt_que, ctl_que,))  
+    input_process.start()
+    visual_process.start()
+    input_process.join()
+    visual_process.join()
+
 
 if __name__ == "__main__":
     server_run("localhost", 10080)

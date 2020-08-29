@@ -58,29 +58,36 @@ def nms(boxes, scores, nms_thresh=0.5):
     return keep
 
 
-def generate_boxes(rects, cls_pred, cls_thresh=0.5, nms_thresh=0.5, scores_rm=[], anno=True):
+def generate_boxes(rects, cls_pred, cls_thresh=0.9, nms_thresh=0.3, conf_thresh=0.3, scores_rm=[], anno=True, snn=True):
     if anno:
         cls_pred = np.array(cls_pred)
         conf_pred = cls_pred[:, -1]
         cls_pred = cls_pred[:, :-1]
+    else:
+        conf_pred = np.ones(len(cls_pred))
+    max_spikes = np.max(cls_pred, axis=1)
     scores, cls_inds = cls_score(cls_pred, rects)
     for ind in scores_rm:
         scores[cls_inds==ind] = 0
     # global max_conf
     # max_conf = max(np.max(conf_pred), max_conf)
     # print(conf_pred, "#########################max_conf:", max_conf)
-    # conf_pred = conf_pred / 16.0
+    if snn:
+        conf_pred = conf_pred / 10.0
+    scores = scores * conf_pred
     if anno:
-        scores = scores * conf_pred
-        mask = np.where((scores >= cls_thresh) & (conf_pred > 0.5))#
+        mask = np.where((scores >= cls_thresh) & (conf_pred >= conf_thresh))#
     else:
         mask = np.where(scores >= cls_thresh)
     print(scores)
     scores = scores[mask]
     cls_inds = cls_inds[mask]
     boxes = rects[mask]
+    conf_pred = conf_pred[mask]
+    max_spikes = max_spikes[mask]
     keep_inds = nms(boxes, scores, nms_thresh)
-    return boxes[keep_inds], cls_inds[keep_inds], scores[keep_inds]
+    print(max_spikes[keep_inds])
+    return boxes[keep_inds], cls_inds[keep_inds], scores[keep_inds], conf_pred[keep_inds], max_spikes[keep_inds]
 
 if __name__ == "__main__":
     data =[
