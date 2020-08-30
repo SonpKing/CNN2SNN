@@ -27,7 +27,7 @@ REVIEW_TIME = 0.15
 WAIT_TIME = 2
 BUG = False
 ANNO = True
-ROBOT = False
+ROBOT = True
 SNN = True
 
 def start_service(conns, thread_num, input_que, res_que, plt_que, ctl_que, seed_que):
@@ -231,7 +231,7 @@ def process_output(img, res, boxes, plt_que, class_name, class_color, scores_rm=
         print("receive totally", len(new_boxes), "results")
         new_boxes = np.array(new_boxes)
         if SNN:
-            boxes, cls_inds, scores, confs, max_spikes = generate_boxes(new_boxes, cls_pred, cls_thresh=0.5, nms_thresh=0.3, conf_thresh=0.7, scores_rm=scores_rm, anno=ANNO, snn=SNN)
+            boxes, cls_inds, scores, confs, max_spikes = generate_boxes(new_boxes, cls_pred, cls_thresh=0.5, nms_thresh=0.3, conf_thresh=0.5, scores_rm=scores_rm, anno=ANNO, snn=SNN)
         else:
             boxes, cls_inds, scores, confs, max_spikes = generate_boxes(new_boxes, cls_pred, cls_thresh=0.5, nms_thresh=0.3, conf_thresh=0.7, scores_rm=scores_rm, anno=ANNO, snn=SNN)
         print(cls_inds)
@@ -241,15 +241,26 @@ def process_output(img, res, boxes, plt_que, class_name, class_color, scores_rm=
         fig = vis_bb(img, boxes, scores, cls_inds, class_name, class_color, confs=confs, spikes=max_spikes)#, show_time=5000, show=True
         plt_que.put(fig)
         print("put cls img")
-        for cls_ind in cls_inds:
-            if cls_ind == 6:
-                is_house = True
-            if cls_ind == 4:
-                is_person = True
-            if cls_ind == 3:
-                is_water = True
-            if cls_ind == 0:
-                is_broker = True
+        #['diba', 'floor', 'water', 'person', 'robot', 'house']
+        if ANNO:
+            for cls_ind in cls_inds:
+                if cls_ind == 5:
+                    is_house = True
+                if cls_ind == 3:
+                    is_person = True
+                if cls_ind == 2:
+                    is_water = True
+                is_broker = False
+        else:
+            for cls_ind in cls_inds:
+                if cls_ind == 6:
+                    is_house = True
+                if cls_ind == 4:
+                    is_person = True
+                if cls_ind == 3:
+                    is_water = True
+                if cls_ind == 0:
+                    is_broker = True
     return is_water, is_house, is_broker, is_person
 
 # def receive_async(conn, res_que):
