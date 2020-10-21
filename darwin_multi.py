@@ -1,6 +1,7 @@
 from hardware import DarwinDev
-from hardware.create_conf import create_config
-from hardware.darwain_hardware import read_image, read_connections, fit_input, generate_multi_input
+# from hardware.create_conf_nice5 import create_config
+from hardware.create_conf_anno_loss_weight_7 import create_config
+from hardware.darwain_hardware import read_image, read_connections, fit_input, generate_multi_input, edit_connections
 import numpy as np 
 from time import sleep
 from util import data_loader
@@ -10,14 +11,16 @@ from hardware.insert_zeros import insert_zeros
 
 def sim():
     batch_size = 3
-    _, val_loader = data_loader("C:\\Users\\zjlab\\Desktop\\Detect_Data_anno\\Detect_Data", batch_size=3, img_size=32, workers=1, dataset="imagenet") 
+    # _, val_loader = data_loader("C:\\Users\\zjlab\\Desktop\\Detect_Data_anno\\Detect_Data", batch_size=3, img_size=32, workers=1, dataset="imagenet") 
+    _, val_loader = data_loader("C:\\Users\\zjlab\\Desktop\\Detect_Annoed", batch_size=3, img_size=32, workers=1, dataset="imagenet")#
     ticks = 200
     total_acc  = 0
-    class_num = 14
-    sim = DarwinDev("192.168.1.3", 7, 220000, class_num)
+    class_num = 15
+    sim = DarwinDev("192.168.1.59", 7, 220000, class_num)
     
     # for _ in range(1):
     # for idx in range(10):
+    max_conf = 0
     for it, (inputs, targets) in enumerate(val_loader):
         # inputs = read_image("data/86.jpg")
         shows = [False]*100
@@ -34,7 +37,7 @@ def sim():
         print("eliminate")
         s_time = time.time()
         inputlist, rowlist = generate_multi_input(image1, image2, image3)
-        sim.run(inputlist, rowlist, ticks, show=shows[it] )
+        sim.run(inputlist, rowlist, class_num*3, ticks, show=shows[it] )
         print("hardware time:", time.time() - s_time)
 
         # sim.reset()
@@ -48,6 +51,9 @@ def sim():
         print(sim_res[0:class_num])
         print(sim_res[class_num:class_num*2])
         print(sim_res[class_num*2:])
+        max_conf = max(max_conf, sim_res[class_num-1])
+        max_conf = max(max_conf, sim_res[2*class_num-1])
+        max_conf = max(max_conf, sim_res[3*class_num-1])
 
         sim_res1 = np.argmax(sim_res[0:class_num])
         sim_res2 = np.argmax(sim_res[class_num:class_num*2])
@@ -60,6 +66,7 @@ def sim():
         if sim_res3 == targets[2]:
             total_acc += 1
         print(it, total_acc/(it*batch_size+1)*100)
+    print(max_conf)
 
 
 
@@ -74,7 +81,8 @@ def sim():
 if __name__ == "__main__":
     # create_config()
     sim()
-    # data = read_connections('connections_no_prune_50/net.blocks.2.1.conv_pw_to_net.blocks.2.1.conv_dw_chip0')[0:500]
+    # data = read_connections('connections_anno_7\\net.global_pool_to_net.classifier_chip0')[0:500]
     # for d in data:
     #     print(d)
-    # insert_zeros("connections_70_slim_limitcrop",40,'connections_70_slim_limitcrop_7')
+    # edit_connections("connections_anno_loss_weight_7\\net.global_pool_to_net.classifier_chip0", 14, 4)
+    # insert_zeros("connections_anno_loss_weight",40,'connections_anno_loss_weight_7')

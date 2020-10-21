@@ -129,9 +129,13 @@ def show_bb(img, boxes, numShowRects=10000, show_time=5000):
     cv.waitKey(show_time)
     
 
-def vis_bb(img, bbox_pred, scores, cls_inds, class_name, class_color, show_time=0, show=False):
+def vis_bb(img, bbox_pred, scores, cls_inds, class_name, class_color, show_time=0, show=False, confs=[], spikes=[]):
     print(class_name)
     img = img.copy()
+    if len(confs) == 0:
+        confs = [0.0] * len(scores)
+    if len(spikes) == 0:
+        spikes = [0] * len(scores)
     for i, box in enumerate(bbox_pred):
         cls_indx = cls_inds[i]
         xmin, ymin, xmax, ymax = box
@@ -144,7 +148,7 @@ def vis_bb(img, bbox_pred, scores, cls_inds, class_name, class_color, show_time=
         # cv.resize(img, (newWidth, newHeight))
         cv.rectangle(img, (int(xmin), int(ymin)), (int(xmax), int(ymax)), class_color[int(cls_indx)], 1)
         cv.rectangle(img, (int(xmin), int(ymin)), (int(xmin+box_w*0.55), int(ymin+15)), class_color[int(cls_indx)], -1)
-        mess = '%s: %.3f' % (class_name[int(cls_indx)], scores[i])
+        mess = '%s: %.3f %.2f %d' % (class_name[int(cls_indx)], scores[i], confs[i], spikes[i])
         cv.putText(img, mess, (int(xmin), int(ymin+15)), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,0), 1)
     if show==False:
         # cv.imshow("Result", img)

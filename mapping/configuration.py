@@ -284,7 +284,7 @@ class configuration(object):
 
     def gen_config_file(self, filename, leaksign=0):
         f = open(filename, 'w')
-        rf = open("re_config.txt", "w")
+        rf = open("config/re_config.txt", "w")
         # f.write(str+'\n')
         for node in self.nodes:
             """
