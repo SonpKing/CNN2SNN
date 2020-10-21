@@ -137,9 +137,9 @@ class DarwinDev:
             self.trans.send_config("config/re_config_C.txt")
         
 
-    def run(self, inputlist, rowlist, ticks=105, show=False):
+    def run(self, inputlist, rowlist, spike_num, ticks=105, show=False):
         ss_time = time.time()
-        self.spikes_all = np.zeros(42) 
+        self.spikes_all = np.zeros(spike_num) 
         self.trans.send_input_3chip_list(inputlist, rowlist, self.class_num) 
         for i in range(ticks):
             # print ('======tick=========  ' + str(i))
@@ -164,6 +164,14 @@ def read_connections(path):
     data = sorted(data, key=lambda x: x[0]) 
     data = [item.tolist() for item in data]
     return data 
+
+def edit_connections(path, ind, scale):
+    with open(path, 'rb') as f:
+        data = pickle.load(f)
+    data[data[:, 1]==ind, 2]*= scale
+    with open(path, 'wb') as f:
+        pickle.dump(data, f)
+
 
 
 if __name__ == "__main__":
