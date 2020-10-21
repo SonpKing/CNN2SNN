@@ -11,7 +11,7 @@ import numpy as np
 
 def get_headpack(x, y):
     x1 = x % 24
-    y1 = y % 
+    y1 = y % 24
     
 
     
