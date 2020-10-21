@@ -11,7 +11,10 @@ import numpy as np
 
 def get_headpack(x, y):
     x1 = x % 24
-    y1 = y % 24
+    y1 = y % 
+    
+
+    
     tmp = (x << 18) | (y << 12) | (48 << 6) | (47) ###(24,23)input
     if x1 == 23:
         return (y1 << 38) | (0b10 << 36) | (0b1 << 32) | (0b1 << 29) | (0x1 << 24) | tmp
