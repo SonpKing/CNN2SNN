@@ -121,7 +121,8 @@ def find_activations():
     layers = os.listdir(path)
     import time
     current_time = time.strftime("%Y-%m-%dT%H:%M", time.localtime())
-    save_path_dir = os.path.join(save_path, current_time)
+    # save_path_dir = os.path.join(save_path, current_time)
+    save_path_dir = save_path
     if not os.path.exists(save_path_dir):
         os.makedirs(save_path_dir) 
     for i in range(len(layers)):

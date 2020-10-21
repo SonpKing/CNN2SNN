@@ -5,9 +5,10 @@ import pickle
 import os
 from .SpikeNet import *
 
+GROUP = 1
 def conv3x3(in_channels, out_channels, stride=1, group=False, bias=False):
     if group:
-        groups = out_channels
+        groups = out_channels // GROUP
     else:
         groups = 1
     return nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=stride, padding=1, bias=bias, groups=groups)
@@ -258,11 +259,11 @@ class MobileNetV2_1(MobileNetV2):
         return nn.Sequential(*blocks)
 
 
-def mobilenet_slim_v1(class_num=100):
+def mobilenet_slim_1(class_num=100):
     output_channels = [24, 32, 40]
     strides = [1, 2, 2]
     num_blocks = [1, 2, 3]
-    return MobileNetV2(class_num, num_blocks, output_channels, strides)
+    return MobileNetV2_1(class_num, num_blocks, output_channels, strides)
 
 
 class MobileNetV2_2(MobileNetV2):

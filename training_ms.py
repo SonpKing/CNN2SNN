@@ -37,20 +37,21 @@ args = parser.parse_args()
 os.environ["CUDA_VISIBLE_DEVICES"]="0, 1, 2"
 
 
-# #training on my dataset
-# model = mobilenet_slim_2(7, False)
+#training on my dataset
+model = mobilenet_slim_2(7, False)
 
-# #parallel
-# if torch.cuda.device_count()>1:
-#     model = nn.DataParallel(model, device_ids=[0,1]) #多GPU并行
+#parallel
+if torch.cuda.device_count()>1:
+    model = nn.DataParallel(model, device_ids=[0,1]) #多GPU并行
 
-# model = model.cuda()
-# #train and val data loading
-# train_loader, val_loader = data_loader("/home/jinxb/Project/data/Detect_Data", batch_size=16, img_size=32, workers=args.workers, dataset="imagenet") 
-# lr = 0.01
-# args.pretrain = "checkpoint/mobile_slim/epoch_51_39.pth.tar"
-# learning_rate = [lr] * 40 + [lr*0.1] * 20 + [lr*0.01] * 20
-# fit(args, model, train_loader, val_loader, learning_rate, rm_layers=["classifier"])
+model = model.cuda()
+#train and val data loading
+train_loader, val_loader = data_loader("/home/jinxb/Project/data/Detect_Data", batch_size=16, img_size=32, workers=args.workers, dataset="imagenet") 
+lr = 0.01
+args.save_all_checkpoint = True
+args.pretrain = "checkpoint/mobile_slim/epoch_53_47.pth.tar"
+learning_rate = [lr] * 40 + [lr*0.1] * 20 + [lr*0.01] * 20
+fit(args, model, train_loader, val_loader, learning_rate, rm_layers=["classifier"])
 
 
 
@@ -87,19 +88,19 @@ os.environ["CUDA_VISIBLE_DEVICES"]="0, 1, 2"
 # model = mobilenet_slim_spike(7, False, False, True)
 # model = model.cuda()
 # train_loader, val_loader = data_loader("/home/jinxb/Project/data/Detect_Data", batch_size=32, img_size=32, workers=args.workers, dataset="imagenet") 
-# args.pretrain =  "checkpoint/2020-08-20T20:16newdata_train/epoch_89_59.pth.tar"
+# args.pretrain =  "checkpoint/2020-08-21T07:20slim_newdata2/epoch_91_37.pth.tar"
 # args.evaluate = True
 # fit(args, model, train_loader, val_loader, [])
 
 
 
-# #find max activation
+# # #find max activation
 # from convert.find_activations import find_activations
 # find_activations()
 
 
 # ##TODO
-# # normalisze with max activation
+# normalisze with max activation
 # from convert.find_activations import normalise_max
 # from util import load_pretrained
 # from convert.convert_mobilenet_slim import normalise_module
@@ -107,11 +108,11 @@ os.environ["CUDA_VISIBLE_DEVICES"]="0, 1, 2"
 # model = mobilenet_slim_spike(7, False, True)
 # model = model.cuda()
 # train_loader, val_loader = data_loader("/home/jinxb/Project/data/Detect_Data", batch_size=32, img_size=32, workers=args.workers, dataset="imagenet") 
-# args.pretrain =  "checkpoint/2020-08-20T20:16newdata_train/epoch_89_59.pth.tar"
+# args.pretrain =  "checkpoint/2020-08-21T07:20slim_newdata2/epoch_91_37.pth.tar"
 # load_pretrained(model, args.pretrain, [])
-# max_act = normalise_max(model, "max_activations_res/2020-08-20T20:23")
+# max_act = normalise_max(model, "max_activations_res/2020-08-21T07:24")
 # normalise_module(model, "", max_act, 1.0, 1.0)
-# torch.save({"state_dict": model.state_dict()}, "checkpoint/0/mobilenet_slim_newdata_normalise.pth.tar")
+# torch.save({"state_dict": model.state_dict()}, "checkpoint/0/mobilenet_slim_newdata2_normalise.pth.tar")
 # validate(val_loader, model, 350)
 # print(model)
 
@@ -119,11 +120,11 @@ os.environ["CUDA_VISIBLE_DEVICES"]="0, 1, 2"
 
 # %% find scale
 # import torch
-# state_path =  "checkpoint/0/mobilenet_slim_newdata_normalise.pth.tar"
+# state_path =  "checkpoint/0/mobilenet_slim_newdata2_normalise.pth.tar"
 # from util import get_state
 # state = torch.load(state_path)['state_dict']
 # for key in state:
-#     state[key] = torch.round(state[key]*77)
+#     state[key] = torch.round(state[key]*50)
 #     state[key][state[key]>127] = 127
 #     state[key][state[key]<-127] = -127
 # data = []
@@ -132,29 +133,29 @@ os.environ["CUDA_VISIBLE_DEVICES"]="0, 1, 2"
 # data.sort()
 # length = len(data)
 # print(data[5], data[int(length*0.0001)], data[int(length*0.1)], data[int(length*0.9)], data[int(length*0.9999)], data[-5])
-# torch.save({"state_dict": state}, "checkpoint/0/mobilenet_slim_newdata_normalise_77.pth.tar")
+# torch.save({"state_dict": state}, "checkpoint/0/mobilenet_slim_newdata2_normalise_50.pth.tar")
 
 
 # ## validate
 # from util import load_pretrained
 # from util.validate import validate
 # from models import SpikeNet
-# model = mobilenet_slim_spike(7, False, True, vth=77.0)
+# model = mobilenet_slim_spike(7, False, False, vth=50.0)
 # model = model.cuda()
 # train_loader, val_loader = data_loader("/home/jinxb/Project/data/Detect_Data", batch_size=1, img_size=32, workers=args.workers, dataset="imagenet") 
-# args.pretrain = "checkpoint/0/mobilenet_slim_newdata_normalise_77.pth.tar"
+# args.pretrain = "checkpoint/0/mobilenet_slim_newdata2_normalise_50.pth.tar"
 # load_pretrained(model, args.pretrain, [])
-# model = SpikeNet(model, vth=77)
-# validate(val_loader, model, 200)
+# # model = SpikeNet(model, vth=50)
+# validate(val_loader, model, 1)
 
 
-# # generate connections
-from util import load_pretrained
-from convert.convert_mobilenet_slim import convert_module
-from convert import mute_prune_connections
-model = mobilenet_slim_spike(7, False, True, vth=70.0)
-train_loader, val_loader = data_loader("/home/jinxb/Project/data/Detect_Data", batch_size=1, img_size=32, workers=args.workers, dataset="imagenet") 
-args.pretrain = "checkpoint/0/mobilenet_slim_newdata_normalise_70.pth.tar"
-load_pretrained(model, args.pretrain, [])
-convert_module(model, "net", 1, "input", (3, 32, 32), prune=False)
-# mute_prune_connections("connections", "connections_new")
+# # # generate connections
+# from util import load_pretrained
+# from convert.convert_mobilenet_slim import convert_module
+# from convert import mute_prune_connections
+# model = mobilenet_slim_spike(7, False, True, vth=70.0)
+# train_loader, val_loader = data_loader("/home/jinxb/Project/data/Detect_Data", batch_size=1, img_size=32, workers=args.workers, dataset="imagenet") 
+# args.pretrain = "checkpoint/0/mobilenet_slim_newdata_normalise_70.pth.tar"
+# load_pretrained(model, args.pretrain, [])
+# convert_module(model, "net", 1, "input", (3, 32, 32), prune=False)
+# # mute_prune_connections("connections", "connections_new")
