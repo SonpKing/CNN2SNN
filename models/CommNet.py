@@ -2,6 +2,12 @@ import torch
 import torch.nn as nn
 
 def get_exp_slice(slice):
+    '''
+    get the number of expand slice.
+    ------------------------------
+    if slice is a int number, the we split the layer into slice * slice smaller layers
+    if slice is a int list, the total number is the sum of each slice^2 in the list
+    '''
     if isinstance(slice, int):
         exp_slice =  slice * slice
     elif isinstance(slice, list):
@@ -13,6 +19,24 @@ def get_exp_slice(slice):
     return exp_slice
 
 def conv3x3(in_channels, out_channels, stride=1, slice=1, group=False):
+    '''
+    get convolution layer whose kernel size is 3
+    Parameters
+    ----------
+    in_channels: int
+        the number of input layer's channels, 
+    out_channels: int
+        the number of output layer's channels
+    stride: int
+        stride size of the layer
+    slice: int or list
+        use to compute numbers of split smaller layers. multi by groups
+    group: bool
+        if true, then init groups is out_channels. else init groups is 1
+    Notes
+    -----
+    default slice is 1
+    '''
     exp_slice = get_exp_slice(slice)
     if group:
         groups = out_channels * exp_slice
