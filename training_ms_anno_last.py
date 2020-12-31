@@ -112,7 +112,7 @@ os.environ["CUDA_VISIBLE_DEVICES"]="0, 1, 2"
 # from util import get_state
 # state = torch.load(state_path)['state_dict']
 # for key in state:
-#     state[key] = torch.round(state[key]*70)
+#     state[key] = torch.round(state[key]*60)
 #     state[key][state[key]>127] = 127
 #     state[key][state[key]<-127] = -127
 # data = []
@@ -121,32 +121,33 @@ os.environ["CUDA_VISIBLE_DEVICES"]="0, 1, 2"
 # data.sort()
 # length = len(data)
 # print(data[5], data[int(length*0.0001)], data[int(length*0.1)], data[int(length*0.9)], data[int(length*0.9999)], data[-5])
-# torch.save({"state_dict": state}, "checkpoint/0/slim_anno_loss_weight_normalise_scale70.pth.tar")
+# torch.save({"state_dict": state}, "checkpoint/0/slim_anno_loss_weight_normalise_scale60.pth.tar")
 
 
-# # # ## validate
+# # ## validate
+from util import load_pretrained
+from util.validate import validate
+from models import SpikeNet
+vth = 60
+model = mobilenet_slim_spike(15, vth=vth)
+model = model.cuda()
+train_loader, val_loader = data_loader_anno("/home/jinxb/Project/data/Detect_Annoed", batch_size=1, img_size=32, workers=args.workers, dataset="imagenet") 
+args.pretrain = "checkpoint/0/slim_anno_loss_weight_normalise_scale"+str(vth)+".pth.tar"
+load_pretrained(model, args.pretrain, [])
+model = SpikeNet(model, vth=vth)
+validate(val_loader, model, 200, annoed=True, only=False)
+
+
+# # # # # # # generate connections
 # from util import load_pretrained
-# from util.validate import validate
-# from models import SpikeNet
-# model = mobilenet_slim_spike(15, vth=60.0)
-# model = model.cuda()
+# from convert.convert_mobilenet_slim import convert_module
+# from convert import mute_prune_connections
+# model = mobilenet_slim_spike(15, False, True, vth=60.0)
 # train_loader, val_loader = data_loader_anno("/home/jinxb/Project/data/Detect_Annoed", batch_size=1, img_size=32, workers=args.workers, dataset="imagenet") 
 # args.pretrain = "checkpoint/0/slim_anno_loss_weight_normalise_scale60.pth.tar"
 # load_pretrained(model, args.pretrain, [])
-# model = SpikeNet(model, vth=60)
-# validate(val_loader, model, 200, annoed=True)
-
-
-# # # # # # generate connections
-from util import load_pretrained
-from convert.convert_mobilenet_slim import convert_module
-from convert import mute_prune_connections
-model = mobilenet_slim_spike(15, False, True, vth=60.0)
-train_loader, val_loader = data_loader_anno("/home/jinxb/Project/data/Detect_Annoed", batch_size=1, img_size=32, workers=args.workers, dataset="imagenet") 
-args.pretrain = "checkpoint/0/slim_anno_loss_weight_normalise_scale60.pth.tar"
-load_pretrained(model, args.pretrain, [])
-convert_module(model, "net", 1, "input", (3, 32, 32), prune=False)
-# mute_prune_connections("connections", "connections_new")
+# convert_module(model, "net", 1, "input", (3, 32, 32), prune=False)
+# # mute_prune_connections("connections", "connections_new")
 
 
 

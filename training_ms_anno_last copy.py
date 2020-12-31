@@ -1,7 +1,7 @@
 import argparse
 import os
 from models.MobileNet_Slim import *
-from util import load_single_to_multi, read_labels, writeToTxt, data_loader_darwin, data_loader_anno
+from util import load_single_to_multi, read_labels, writeToTxt, data_loader_anno, data_loader_anno
 from util.gpu_loader import gpu_data_loader
 from util.training_adv import fit
 import torch.nn.utils.prune as prune
@@ -37,7 +37,7 @@ args = parser.parse_args()
 os.environ["CUDA_VISIBLE_DEVICES"]="0, 1, 2"
 
 # # # # #training on my dataset
-# model = mobilenet_slim_2(14, False)
+# model = mobilenet_slim_2(15, False)
 
 # #parallel
 # if torch.cuda.device_count()>1:
@@ -45,12 +45,16 @@ os.environ["CUDA_VISIBLE_DEVICES"]="0, 1, 2"
 
 # model = model.cuda()
 # #train and val data loading
-# train_loader, val_loader = data_loader_darwin("/home/jinxb/Project/data/Detect_Data_nice5", batch_size=16, img_size=32, workers=args.workers, dataset="imagenet") 
+# train_loader, val_loader = data_loader_anno("/home/jinxb/Project/data/Detect_Annoed", batch_size=16, img_size=32, workers=args.workers, dataset="imagenet") 
 # lr = 0.01
 # args.save_all_checkpoint = True
-# args.pretrain = "checkpoint/mobile_slim/epoch_51_39.pth.tar"
-# learning_rate = [lr] * 40 + [lr*0.1] * 20 + [lr*0.01] * 20
-# fit(args, model, train_loader, val_loader, learning_rate, rm_layers=["classifier"])
+# # args.pretrain = "checkpoint/mobile_slim/epoch_51_39.pth.tar"
+# #"checkpoint/2020-08-28T18:00slim_anno_nice7_pretrain/epoch_81_18.pth.tar"
+# args.resume = "checkpoint/2020-08-28T21:17slim_anno_loss_weight_7/epoch_83_80.pth.tar"
+# learning_rate = [lr] * 40 + [lr*0.1] * 20 + [lr*0.01] * 25 + [lr*0.001] * 10#
+# loss_weight = [1.0]*14
+# loss_weight[11] = 2.0
+# fit(args, model, train_loader, val_loader, learning_rate, rm_layers=["classifier"], annoed=True, loss_weight=loss_weight)
 
 
 # # clear
@@ -68,15 +72,26 @@ os.environ["CUDA_VISIBLE_DEVICES"]="0, 1, 2"
 #         print('no such file:%s'%path)
 
 
-# #gen max activation
+#gen max activation
 
-model = mobilenet_slim_spike(14, False, False, True)
-model = model.cuda()
-train_loader, val_loader = data_loader_darwin("/home/jinxb/Project/data/Detect_Data", batch_size=32, img_size=32, workers=args.workers, dataset="imagenet") 
-args.pretrain =  "checkpoint/2020-08-26T18:16slim_nice7/epoch_84_53.pth.tar"
-args.evaluate = True
-fit(args, model, train_loader, val_loader, [])
+# model = mobilenet_slim_spike(15, False, False, True)
+# model = model.cuda()
+# train_loader, val_loader = data_loader_anno("/home/jinxb/Project/data/Detect_Annoed", batch_size=32, img_size=32, workers=args.workers, dataset="imagenet") 
+# args.pretrain =  "checkpoint/2020-08-28T21:27slim_anno_loss_weight_7_resume/epoch_83_87.pth.tar"#"checkpoint/2020-08-28T18:17slime_annp_nice7_pretrain_resume/epoch_81_20.pth.tar"#
+# args.evaluate = True
+# fit(args, model, train_loader, val_loader, [])
 
+# def read_data(file_path):
+#     with open(file_path, 'rb') as f:
+#         data = pickle.load(f)
+#     return data.cpu().numpy()
+
+# tmp = []
+# for i in range(5):
+#     data = read_data("max_activations/20/"+str(i+1))
+#     print(data.shape)
+#     tmp.extend(data[:, -1])
+# print(tmp)
 
 
 # # #find max activation
@@ -90,22 +105,21 @@ fit(args, model, train_loader, val_loader, [])
 # from util import load_pretrained
 # from convert.convert_mobilenet_slim import normalise_module
 # from util.validate import validate
-# model = mobilenet_slim_spike(14, False, True)
+# model = mobilenet_slim_spike(15, False, True)
 # model = model.cuda()
-# train_loader, val_loader = data_loader_darwin("/home/jinxb/Project/data/Detect_Data", batch_size=32, img_size=32, workers=args.workers, dataset="imagenet") 
-# args.pretrain =  "checkpoint/2020-08-26T18:16slim_nice7/epoch_84_53.pth.tar"
+# train_loader, val_loader = data_loader_anno("/home/jinxb/Project/data/Detect_Annoed", batch_size=32, img_size=32, workers=args.workers, dataset="imagenet") 
+# args.pretrain =  "checkpoint/2020-08-28T21:27slim_anno_loss_weight_7_resume/epoch_83_87.pth.tar"
 # load_pretrained(model, args.pretrain, [])
 # max_act = normalise_max(model, "max_activations_res")
 # normalise_module(model, "", max_act, 1.0, 1.0)
-# torch.save({"state_dict": model.state_dict()}, "checkpoint/0/slim_nice7_2_normalise.pth.tar")
+# torch.save({"state_dict": model.state_dict()}, "checkpoint/0/slim_anno_loss_weight_normalise.pth.tar")
 # validate(val_loader, model, 350)
 # print(model)
 
 
-
 # %% find scale
 # import torch
-# state_path =  "checkpoint/0/slim_nice7_2_normalise.pth.tar"
+# state_path =  "checkpoint/0/slim_anno_loss_weight_normalise.pth.tar"
 # from util import get_state
 # state = torch.load(state_path)['state_dict']
 # for key in state:
@@ -118,29 +132,31 @@ fit(args, model, train_loader, val_loader, [])
 # data.sort()
 # length = len(data)
 # print(data[5], data[int(length*0.0001)], data[int(length*0.1)], data[int(length*0.9)], data[int(length*0.9999)], data[-5])
-# torch.save({"state_dict": state}, "checkpoint/0/slim_nice7_2_normalise_scale70.pth.tar")
+# torch.save({"state_dict": state}, "checkpoint/0/slim_anno_loss_weight_normalise_scale70.pth.tar")
 
 
-# # # ## validate
-# from util import load_pretrained
-# from util.validate import validate
-# from models import SpikeNet
-# model = mobilenet_slim_spike(14, vth=70.0)
-# model = model.cuda()
-# train_loader, val_loader = data_loader_darwin("/home/jinxb/Project/data/Detect_Data", batch_size=1, img_size=32, workers=args.workers, dataset="imagenet") 
-# args.pretrain = "checkpoint/0/slim_nice7_2_normalise_scale70.pth.tar"
-# load_pretrained(model, args.pretrain, [])
-# model = SpikeNet(model, vth=70)
-# validate(val_loader, model, 200)
+# # ## validate
+from util import load_pretrained
+from util.validate import validate
+from models import SpikeNet
+model = mobilenet_slim_spike(15, vth=60.0)
+model = model.cuda()
+train_loader, val_loader = data_loader_anno("/home/jinxb/Project/data/Detect_Annoed", batch_size=1, img_size=32, workers=args.workers, dataset="imagenet") 
+args.pretrain = "checkpoint/0/slim_anno_loss_weight_normalise_scale60.pth.tar"
+load_pretrained(model, args.pretrain, [])
+model = SpikeNet(model, vth=60)
+conf = []
+validate(val_loader, model, 500, annoed=True, conf=conf)
+print(conf)
 
 
-# # # # # # generate connections
+# # # # # # # generate connections
 # from util import load_pretrained
 # from convert.convert_mobilenet_slim import convert_module
 # from convert import mute_prune_connections
-# model = mobilenet_slim_spike(14, False, True, vth=60.0)
-# train_loader, val_loader = data_loader_darwin("/home/jinxb/Project/data/Detect_Data", batch_size=1, img_size=32, workers=args.workers, dataset="imagenet") 
-# args.pretrain = "checkpoint/0/slim_nice7_2_normalise_scale60.pth.tar"
+# model = mobilenet_slim_spike(15, False, True, vth=60.0)
+# train_loader, val_loader = data_loader_anno("/home/jinxb/Project/data/Detect_Annoed", batch_size=1, img_size=32, workers=args.workers, dataset="imagenet") 
+# args.pretrain = "checkpoint/0/slim_anno_loss_weight_normalise_scale60.pth.tar"
 # load_pretrained(model, args.pretrain, [])
 # convert_module(model, "net", 1, "input", (3, 32, 32), prune=False)
 # # mute_prune_connections("connections", "connections_new")

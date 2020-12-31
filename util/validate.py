@@ -8,7 +8,7 @@ from torch.autograd import Variable
 import pickle
 
 
-def validate(val_loader, model, sim_iter=None, show=True, annoed=False):
+def validate(val_loader, model, sim_iter=None, show=True, annoed=False, conf=None, only=False):
     criterion = torch.nn.CrossEntropyLoss().cuda()
     batch_time = AverageMeter()
     losses = AverageMeter()
@@ -52,7 +52,15 @@ def validate(val_loader, model, sim_iter=None, show=True, annoed=False):
             # print(target_var)
             # input()
             if annoed:
+                
+                if conf is not None:
+                    conf.append(output[:, -1].cpu()[0].item())
                 output = output[:, :-1]
+                    
+            if only and target_var < 8:
+                continue
+
+
             loss = criterion(output, target_var)
 
             #measure
@@ -65,6 +73,8 @@ def validate(val_loader, model, sim_iter=None, show=True, annoed=False):
             'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
             'Prec@1 {top1.val:.3f} ({top1.avg:.3f})\t'.format(
             batch_time=batch_time, loss=losses, top1=top1))
+        from models.SpikeNet import total_spike
+        print(total_spike)
 
 
     print(' * Prec@1 {top1.avg:.3f}'.format(top1=top1))
