@@ -37,16 +37,16 @@ def data_loader(root, img_size=None, batch_size=256, workers=2, pin_memory=True,
                 transforms.RandomResizedCrop(img_size),
                 transforms.RandomHorizontalFlip(),
                 transforms.ToTensor(),
-                # normalize,
+                normalize,
             ])
         )
         val_dataset = datasets.ImageFolder(
             val_dir,
             transforms.Compose([
-                transforms.Resize(img_size),
+                transforms.Resize(256),
                 transforms.CenterCrop(img_size),
                 transforms.ToTensor(),
-                # normalize,
+                normalize,
             ])
         )
         print(train_dataset.class_to_idx)
@@ -63,6 +63,24 @@ def data_loader(root, img_size=None, batch_size=256, workers=2, pin_memory=True,
             transforms.Resize((img_size, img_size)),
             transforms.ToTensor(),
         ]))
+    elif dataset == "imagenet_caffe":
+        mean = torch.as_tensor([103.939, 116.779, 123.68])[:, None, None]#[102.9801, 115.9465, 122.7717]
+        train_dataset = datasets.ImageFolder(
+            train_dir,
+            transforms.Compose([
+                transforms.RandomResizedCrop(img_size),
+                transforms.RandomHorizontalFlip(),
+                transforms.Lambda(lambda x:torch.ByteTensor(torch.ByteStorage.from_buffer(x.tobytes())).view(img_size, img_size, 3).permute((2, 0, 1)).contiguous().float()[(2,1,0),:,:].sub_(mean))
+            ])
+        )
+        val_dataset = datasets.ImageFolder(
+            val_dir,
+            transforms.Compose([
+                transforms.Resize(256),
+                transforms.CenterCrop(img_size),
+                transforms.Lambda(lambda x:torch.ByteTensor(torch.ByteStorage.from_buffer(x.tobytes())).view(img_size, img_size, 3).permute((2, 0, 1)).contiguous().float()[(2,1,0),:,:].sub_(mean))
+            ])
+        )
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=workers, pin_memory=pin_memory)
     val_loader = DataLoader(val_dataset, batch_size = batch_size, shuffle=False, num_workers=workers, pin_memory=pin_memory)
@@ -359,8 +377,11 @@ def convert_input_no_normalise(state_path, new_path, conv_name, device=None):
     # new = torch.load(new_path)
     # print(new.keys())
 
-def get_state(model, state_path, remove_layers, device=None):
-    state = torch.load(state_path, map_location = device)['state_dict']
+def get_state(model, state_path, remove_layers, device=None, need_dict=True):
+    if need_dict:
+        state = torch.load(state_path, map_location = device)['state_dict']
+    else:
+        state = state_path
     state_multi = list(state.keys())[0].split('.')[0]=="module"
     model_multi = hasattr(model, "module")
     if model_multi!=state_multi:
@@ -377,8 +398,11 @@ def get_state(model, state_path, remove_layers, device=None):
                     print("remove layer", name)
     return state
 
-def rename_layers(state_path, name_mapping):
-    state = torch.load(state_path)['state_dict']
+def rename_layers(state_path, name_mapping, state_dict = True):
+    if state_dict:
+        state = torch.load(state_path)['state_dict']
+    else:
+        state = torch.load(state_path)
     all_state = state.items()
     state = {}
     for name, weight in all_state:
