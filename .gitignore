@@ -8,6 +8,8 @@ max_activations*/*
 __*
 *.tmp
 *.zip
+*.png
+*.pdf
 temp*
 tmp_*
 !__init__.py

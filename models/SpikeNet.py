@@ -35,7 +35,7 @@ class If(nn.Module):
         if not self.init:
             self.membrane *= 0.0  
             self.total_num *= 0
-
+total_spike = 0
 class If2(If):
     def forward(self, x):
         if self.init or self.membrane.shape!=x.shape:
@@ -45,8 +45,9 @@ class If2(If):
         spike = (self.membrane >= self.V_th).int()
         self.membrane -= spike * self.V_th
         self.total_num += spike
+        global total_spike
+        total_spike += torch.sum(self.total_num)
         return spike.float()
-
 
 class If3(If):
     def forward(self, x):
@@ -56,7 +57,7 @@ class If3(If):
         self.membrane += x
         spike = self.membrane >= self.V_th
         self.membrane[spike] = 0
-        self.total_num += spike.int()
+        self.total_num += spike.int() 
         return spike.float()
 
 
